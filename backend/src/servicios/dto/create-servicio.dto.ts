@@ -1,1 +1,4 @@
-export class CreateServicioDto {}
+export class CreateServicioDto {
+	nombre: string;
+	descripcion?: string;
+}

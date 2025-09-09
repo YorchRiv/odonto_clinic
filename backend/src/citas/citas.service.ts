@@ -1,26 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCitaDto } from './dto/create-cita.dto';
 import { UpdateCitaDto } from './dto/update-cita.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CitasService {
-  create(createCitaDto: CreateCitaDto) {
-    return 'This action adds a new cita';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createCitaDto: CreateCitaDto) {
+    return this.prisma.cita.create({
+      data: createCitaDto,
+    });
   }
 
-  findAll() {
-    return `This action returns all citas`;
+  async findAll() {
+    return this.prisma.cita.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} cita`;
+  async findOne(id: number) {
+    return this.prisma.cita.findUnique({
+      where: { id },
+    });
   }
 
-  update(id: number, updateCitaDto: UpdateCitaDto) {
-    return `This action updates a #${id} cita`;
+  async update(id: number, updateCitaDto: UpdateCitaDto) {
+    return this.prisma.cita.update({
+      where: { id },
+      data: updateCitaDto,
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} cita`;
+  async remove(id: number) {
+    return this.prisma.cita.delete({
+      where: { id },
+    });
   }
 }
