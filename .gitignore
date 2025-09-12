@@ -12,6 +12,7 @@ package-lock.json
 /frontend/bazel-out/
 /frontend/.angular/cache/
 /frontend/coverage/
+/.angular/
 
 # === NestJS (backend) ===
 /backend/dist/
