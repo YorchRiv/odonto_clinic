@@ -2,7 +2,6 @@
 node_modules/
 npm-debug.log*
 yarn-error.log*
-package-lock.json
 
 # === Angular (frontend) ===
 /frontend/.angular/cache/
@@ -10,9 +9,10 @@ package-lock.json
 /frontend/tmp/
 /frontend/out-tsc/
 /frontend/bazel-out/
-/frontend/.angular/cache/
 /frontend/coverage/
 /.angular/
+/frontend/.env
+/frontend/.env.local
 
 # === NestJS (backend) ===
 /backend/dist/
@@ -31,7 +31,7 @@ package-lock.json
 
 # === Prisma ===
 /backend/generated/prisma/
-/backend/prisma/migrations/*/README.md
+/backend/prisma/migrations/**/README.md
 
 # === Logs comunes ===
 *.log
