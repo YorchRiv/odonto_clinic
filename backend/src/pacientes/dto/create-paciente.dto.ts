@@ -7,4 +7,5 @@ export class CreatePacienteDto {
 	fechaNacimiento?: Date | string;
 	ultimaVisita?: Date | string;
 	estado?: 'ACTIVO' | 'INACTIVO';
+	creadoPorId: number;
 }

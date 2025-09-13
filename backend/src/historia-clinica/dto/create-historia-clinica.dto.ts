@@ -4,5 +4,6 @@ export class CreateHistoriaClinicaDto {
 	descripcion: string;
 	diagnostico?: string;
 	tratamiento?: string;
+	tipoTratamiento?: string;
 	observaciones?: string;
 }
