@@ -4,6 +4,12 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+//npm install
+//npx prisma generate
+//npx prisma migrate dev --name init
+//npm run start
+
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -16,6 +22,7 @@ datasource db {
 model Usuario {
   id          Int       @id @default(autoincrement())
   nombre      String
+  apellido    String
   email       String    @unique
   password    String
   rol         Rol       @default(RECEPCIONISTA)
@@ -72,7 +79,8 @@ model Cita {
   usuario     Usuario  @relation(fields: [usuarioId], references: [id])
   servicioId  Int
   servicio    Servicio @relation(fields: [servicioId], references: [id])
-  fecha       DateTime
+  fechaInicio DateTime
+  fechaFin    DateTime
   estado      EstadoCita @default(NUEVA)
   notas       String?
   historia    HistoriaClinica?

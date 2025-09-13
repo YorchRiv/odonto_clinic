@@ -5,6 +5,11 @@ import { AgendaComponent } 	from './agenda/agenda.component'; // Importa el comp
 
 export const routes: Routes = [
 	{
+		path: '',
+		redirectTo: 'dashboard',
+		pathMatch: 'full'
+	},
+	{
 		path: 'dashboard',
 		component: DashboardComponent
 	},
@@ -12,7 +17,4 @@ export const routes: Routes = [
 		path: 'agenda',
 		component: AgendaComponent
 	}
-
-
 ];
-
