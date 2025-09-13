@@ -1,5 +1,6 @@
 export class CreatePacienteDto {
 	nombre: string;
+	apellido: string;
 	identificacion: string;
 	telefono?: string;
 	email?: string;
@@ -7,4 +8,5 @@ export class CreatePacienteDto {
 	fechaNacimiento?: Date | string;
 	ultimaVisita?: Date | string;
 	estado?: 'ACTIVO' | 'INACTIVO';
+	creadoPorId: number;
 }
