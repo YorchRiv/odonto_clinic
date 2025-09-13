@@ -35,6 +35,7 @@ enum Rol {
 model Paciente {
   id             Int       @id @default(autoincrement())
   nombre         String
+  apellido       String @default("")
   identificacion String    @unique
   telefono       String?
   email          String?

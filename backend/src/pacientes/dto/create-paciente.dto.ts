@@ -1,5 +1,6 @@
 export class CreatePacienteDto {
 	nombre: string;
+	apellido: string;
 	identificacion: string;
 	telefono?: string;
 	email?: string;
