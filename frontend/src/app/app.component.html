@@ -37,40 +37,52 @@
   
       <ul class="nav flex-column">
         <li class="nav-item mb-1">
-          <a class="nav-link text-white active d-flex align-items-center gap-2" [routerLink]="['/dashboard']">
+          <a class="nav-link text-white active d-flex align-items-center gap-2" 
+          routerLink="/dashboard"
+          routerLinkActive="active">
             <i class="fa-solid fa-chart-line"></i>
             <span class="text-nowrap">Dashboard</span>
           </a>
        <li class="nav-item mb-1">
-  <a class="nav-link text-white d-flex align-items-center gap-2" [routerLink]="['/agenda']">
+  <a class="nav-link text-white d-flex align-items-center gap-2" 
+     routerLink="/agenda"
+     routerLinkActive="active">
     <i class="fa-solid fa-calendar-check"></i>
     <span class="text-nowrap">Agenda</span>
   </a>
 </li>
 
 <li class="nav-item mb-1">
-  <a class="nav-link text-white d-flex align-items-center gap-2" href="#">
-    <i class="fa-solid fa-users"></i>
-    <span class="text-nowrap">Pacientes</span>
-  </a>
-</li>
+    <a class="nav-link text-white d-flex align-items-center gap-2"
+       routerLink="/pacientes"
+       routerLinkActive="active">
+      <i class="fa-solid fa-users"></i>
+      <span class="text-nowrap">Pacientes</span>
+    </a>
+  </li>
 
 <li class="nav-item mb-1">
-  <a class="nav-link text-white d-flex align-items-center gap-2" href="#">
+  <a class="nav-link text-white d-flex align-items-center gap-2" 
+     routerLink="/historia-clinica"
+     routerLinkActive="active" >
     <i class="fa-solid fa-notes-medical"></i>
     <span class="text-nowrap">Historia Clínica</span>
   </a>
 </li>
 
 <li class="nav-item mb-1">
-  <a class="nav-link text-white d-flex align-items-center gap-2" href="#">
+  <a class="nav-link text-white d-flex align-items-center gap-2" 
+     routerLink="/reportes"
+     routerLinkActive="active">
     <i class="fa-solid fa-chart-pie"></i>
     <span class="text-nowrap">Reportes</span>
   </a>
 </li>
 
 <li class="nav-item mb-1">
-  <a class="nav-link text-white d-flex align-items-center gap-2" href="#">
+  <a class="nav-link text-white d-flex align-items-center gap-2" 
+     routerLink="/configuracion"
+     routerLinkActive="active" >
     <i class="fa-solid fa-gear"></i>
     <span class="text-nowrap">Configuración</span>
   </a>
