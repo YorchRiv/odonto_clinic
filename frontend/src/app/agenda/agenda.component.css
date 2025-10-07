@@ -40,3 +40,16 @@
 @media (max-width: 575.98px) {
   .time-badge { width: 60px; }
 }
+
+/* Ancho del calendario en desktop; en móvil ocupa 100% */
+.calendar-card { width: 340px; max-width: 100%; }
+@media (max-width: 767.98px) { .calendar-card { width: 100%; } }
+
+/* Permite envolver contenido en la fila de la cita */
+.item-row { flex-wrap: wrap; }
+
+/* Acciones: a la derecha si hay espacio; abajo cuando no lo hay */
+.item-actions { flex: 0 0 auto; }
+@media (max-width: 991.98px) {
+  .item-actions { width: 100%; margin-top: .5rem; justify-content: flex-start; }
+}

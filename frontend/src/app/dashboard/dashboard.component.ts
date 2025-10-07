@@ -1,11 +1,146 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject, signal, computed, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, NgForm } from '@angular/forms';
+import { AgendaService, CitaItem, CitaStatus } from '../agenda/agenda.service';
+
+declare var bootstrap: any;
 
 @Component({
   selector: 'app-dashboard',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.css'
+  styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
+  private agendaSrv = inject(AgendaService);
 
+  // ===== Próximas citas (hoy) =====
+  citasHoy = signal<CitaItem[]>([]);
+
+  //contador reactivo de citas del día
+citasHoyCount = computed(
+  () => this.citasHoy().filter(c => c.status !== 'DISPONIBLE').length
+);
+
+  citasHoyTop = computed(() => this.citasHoy()); //muestra todas las citas
+  ngOnInit(): void {
+    this.cargarCitasHoy();
+  }
+
+  private cargarCitasHoy() {
+    this.agendaSrv.getAgendaDia(this.hoyKey()).subscribe({
+      next: res => this.citasHoy.set([...res.items].sort((a,b) => a.hora.localeCompare(b.hora))),
+      error: () => this.citasHoy.set([])
+    });
+  }
+
+  // ===== Helpers de UI =====
+  hoyKey(): string {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = d.getFullYear();
+    return `${dd}-${mm}-${yy}`; // dd-MM-yyyy
+  }
+
+  horaAMPM(hhmm: string): string {
+    // Usa en-US para obtener "AM/PM"
+    const [h, m] = hhmm.split(':').map(Number);
+    const d = new Date(); d.setHours(h, m, 0, 0);
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+
+  badgeClass(s: CitaStatus) {
+    switch (s) {
+      case 'CONFIRMADA': return 'bg-success';
+      case 'PENDIENTE':  return 'bg-warning text-dark';
+      case 'NUEVA':      return 'bg-info text-dark';
+      case 'FINALIZADA': return 'bg-primary';
+      case 'CANCELADA':  return 'bg-danger';
+      default:           return 'bg-secondary';
+    }
+  }
+
+  etiquetaStatus(s: CitaStatus) {
+    // Para mostrar “Confirmada”, “Pendiente”, etc.
+    const map: Record<CitaStatus, string> = {
+      CONFIRMADA: 'Confirmada',
+      PENDIENTE:  'Pendiente',
+      NUEVA:      'Nueva',
+      FINALIZADA: 'Finalizada',
+      CANCELADA:  'Cancelada',
+      DISPONIBLE: 'Disponible'
+    };
+    return map[s] ?? s;
+  }
+
+  trackById = (_:number, it:CitaItem) => it.id;
+
+  // ===== Modal: Nueva Cita (reutiliza AgendaService) =====
+  @ViewChild('crearCitaModal') crearCitaModal!: ElementRef;
+  private modalRef: any;
+
+  creando = signal(false);
+  formError = signal('');
+
+  form = { hora: '', paciente: '', motivo: '', notas: '' };
+  dateInput = ''; // yyyy-MM-dd
+
+  openNuevaCita() {
+    this.formError.set('');
+    this.form = { hora: '', paciente: '', motivo: '', notas: '' };
+
+    // default: hoy
+    const d = new Date();
+    this.dateInput = [
+      d.getFullYear(),
+      String(d.getMonth()+1).padStart(2,'0'),
+      String(d.getDate()).padStart(2,'0')
+    ].join('-');
+
+    this.ensureModal();
+    this.modalRef.show();
+  }
+
+  closeNuevaCita() { this.modalRef?.hide(); }
+
+  private ensureModal() {
+    if (!this.modalRef) {
+      this.modalRef = new bootstrap.Modal(this.crearCitaModal.nativeElement, { backdrop: 'static' });
+    }
+  }
+
+  private toFechaKey(dateInput: string): string {
+    const [y, m, d] = dateInput.split('-');
+    return `${d}-${m}-${y}`; // dd-MM-yyyy
+  }
+
+  submitNuevaCita(f: NgForm) {
+    if (f.invalid) return;
+    this.creando.set(true);
+    this.formError.set('');
+
+    const fechaISO = this.toFechaKey(this.dateInput);
+
+    this.agendaSrv.crearCita({
+      fechaISO,
+      hora: this.form.hora,
+      paciente: this.form.paciente,
+      motivo: this.form.motivo,
+      notas: this.form.notas
+    }).subscribe({
+      next: () => {
+        this.creando.set(false);
+        this.closeNuevaCita();
+        // Si la cita es para hoy, refrescamos la lista
+        if (fechaISO === this.hoyKey()) this.cargarCitasHoy();
+      },
+      error: (err:any) => {
+        this.creando.set(false);
+        if (err?.message === 'HORARIO_OCUPADO') this.formError.set('Ya existe una cita a esa hora para esa fecha.');
+        else this.formError.set('No se pudo crear la cita.');
+      }
+    });
+  }
 }

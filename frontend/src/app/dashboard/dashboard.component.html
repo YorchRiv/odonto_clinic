@@ -3,87 +3,138 @@
 
 <!-- Métricas -->
 <div class="row g-3 mb-4">
-	<div class="col-md-3">
-		<div class="card text-white border-0 shadow-sm" style="background-color:#ec4899;">
-			<div class="card-body">
-				<h6 class="mb-1">Citas Hoy</h6>
-				<div class="fs-4 fw-bold">12</div>
-			</div>
-		</div>
-	</div>
-	<div class="col-md-3">
-		<div class="card text-white border-0 shadow-sm" style="background-color:#06b6d4;">
-			<div class="card-body">
-				<h6 class="mb-1">Pacientes Activos</h6>
-				<div class="fs-4 fw-bold">248</div>
-			</div>
-		</div>
-	</div>
-	<div class="col-md-3">
-		<div class="card text-white border-0 shadow-sm" style="background-color:#10b981;">
-			<div class="card-body">
-				<h6 class="mb-1">Ingresos Mes</h6>
-				<div class="fs-4 fw-bold">$45,230</div>
-			</div>
-		</div>
-	</div>
-	<div class="col-md-3">
-		<div class="card text-white border-0 shadow-sm" style="background-color:#f59e0b;">
-			<div class="card-body">
-				<h6 class="mb-1">Satisfacción</h6>
-				<div class="fs-4 fw-bold">4.8★</div>
-			</div>
-		</div>
-	</div>
+  <div class="col-md-3">
+    <div class="card text-white border-0 shadow-sm" style="background-color:#ec4899;">
+      <div class="card-body">
+        <h6 class="mb-1">Citas Hoy</h6>
+        <div class="fs-4 fw-bold">{{ citasHoyCount() }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-white border-0 shadow-sm" style="background-color:#06b6d4;">
+      <div class="card-body">
+        <h6 class="mb-1">Pacientes Activos</h6>
+        <div class="fs-4 fw-bold">248</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-white border-0 shadow-sm" style="background-color:#fa9624;">
+      <div class="card-body">
+        <h6 class="mb-1">Pacientes Inactivos</h6>
+        <div class="fs-4 fw-bold">$45,230</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-white border-0 shadow-sm" style="background-color:#10b981;">
+      <div class="card-body">
+        <h6 class="mb-1">Ingresos Mes</h6>
+        <div class="fs-4 fw-bold">Q20,500</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Acciones rápidas + Próximas citas -->
 <div class="row g-4">
-	<!-- Acciones rápidas -->
-	<div class="col-lg-8">
-		<div class="card border-0 shadow-sm">
-			<div class="card-header bg-white fw-bold">Acciones Rápidas</div>
-			<div class="card-body">
-				<button class="btn btn-primary w-100 mb-3">
-					<i class="fa-solid fa-calendar-plus me-2"></i> Nueva Cita
-				</button>
-				<button class="btn btn-success w-100 mb-3">
-					<i class="fa-solid fa-user-plus me-2"></i> Nuevo Paciente
-				</button>
-				<button class="btn w-100 text-white" style="background-color:#7c3aed;">
-					<i class="fa-solid fa-file-medical me-2"></i> Nueva Historia
-				</button>
-			</div>
-		</div>
-	</div>
+  <!-- Acciones rápidas -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-bold">Acciones Rápidas</div>
+      <div class="card-body">
+        <button class="btn btn-primary w-100 mb-3" (click)="openNuevaCita()">
+          <i class="fa-solid fa-calendar-plus me-2"></i> Nueva Cita
+        </button>
+        <button class="btn btn-success w-100 mb-3">
+          <i class="fa-solid fa-user-plus me-2"></i> Nuevo Paciente
+        </button>
+        <button class="btn w-100 text-white" style="background-color:#7c3aed;">
+          <i class="fa-solid fa-file-medical me-2"></i> Nueva Historia
+        </button>
+      </div>
+    </div>
+  </div>
 
-	<!-- Próximas citas -->
-	<div class="col-lg-4">
-		<div class="card border-0 shadow-sm">
-			<div class="card-header bg-white fw-bold">Próximas Citas</div>
-			<ul class="list-group list-group-flush">
-				<li class="list-group-item d-flex justify-content-between align-items-start">
-					<div>
-						<div class="fw-semibold">Ana Martínez</div>
-						<small class="text-muted">Limpieza dental — 10:00 AM</small>
-					</div>
-					<span class="badge bg-success rounded-pill">Confirmada</span>
-				</li>
-				<li class="list-group-item d-flex justify-content-between align-items-start">
-					<div>
-						<div class="fw-semibold">Carlos López</div>
-						<small class="text-muted">Endodoncia — 11:30 AM</small>
-					</div>
-					<span class="badge bg-warning text-dark rounded-pill">Pendiente</span>
-				</li>
-				<li class="list-group-item d-flex justify-content-between align-items-start">
-					<div>
-						<div class="fw-semibold">Laura García</div>
-						<small class="text-muted">Consulta — 2:00 PM</small>
-					</div>
-					<span class="badge bg-info text-dark rounded-pill">Nueva</span>
-				</li>
-			</ul>
-		</div>
-	</div>
+  <!-- Próximas citas (hoy) -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+        Próximas Citas
+        <small class="text-muted">{{ hoyKey() }}</small>
+      </div>
+
+      <!-- Lista dinámica (máx 3) -->
+      <ul class="list-group list-group-flush" *ngIf="citasHoyTop().length; else sinCitas">
+        <li class="list-group-item d-flex justify-content-between align-items-start"
+            *ngFor="let c of citasHoyTop(); trackBy: trackById">
+          <div>
+            <div class="fw-semibold">{{ c.paciente }}</div>
+            <small class="text-muted">{{ c.motivo }} — {{ horaAMPM(c.hora) }}</small>
+          </div>
+          <span class="badge rounded-pill"
+                [ngClass]="badgeClass(c.status)">{{ etiquetaStatus(c.status) }}</span>
+        </li>
+      </ul>
+
+      <!-- Estado vacío -->
+      <ng-template #sinCitas>
+        <div class="list-group list-group-flush">
+          <div class="list-group-item text-muted">No hay citas hoy.</div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
 </div>
+
+<!-- =============== MODAL: Nueva Cita (reutiliza AgendaService) =============== -->
+<div class="modal fade" tabindex="-1" #crearCitaModal>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form #f="ngForm" (ngSubmit)="submitNuevaCita(f)">
+        <div class="modal-header">
+          <h5 class="modal-title">Nueva cita</h5>
+          <button type="button" class="btn-close" (click)="closeNuevaCita()" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-control" name="fecha" [(ngModel)]="dateInput" required>
+            <div class="form-text">Se guardará como dd-MM-yyyy.</div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Hora</label>
+            <input type="time" class="form-control" name="hora" [(ngModel)]="form.hora" required>
+          </div>
+          <div class="text-danger small mb-2" *ngIf="formError()">{{ formError() }}</div>
+
+          <div class="mb-3">
+            <label class="form-label">Paciente</label>
+            <input type="text" class="form-control" name="paciente" [(ngModel)]="form.paciente" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Motivo</label>
+            <input type="text" class="form-control" name="motivo" [(ngModel)]="form.motivo">
+          </div>
+
+          <div class="mb-1">
+            <label class="form-label">Notas (opcional)</label>
+            <textarea class="form-control" rows="3" name="notas" [(ngModel)]="form.notas"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" (click)="closeNuevaCita()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando()">
+            {{ creando() ? 'Guardando…' : 'Crear cita' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- ======================================================================== -->

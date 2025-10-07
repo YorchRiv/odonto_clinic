@@ -18,7 +18,7 @@ interface DiaCalendario {
 @Component({
   selector: 'app-agenda',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './agenda.component.html',
   styleUrls: ['./agenda.component.css'],
 })

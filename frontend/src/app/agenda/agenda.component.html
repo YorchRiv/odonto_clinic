@@ -13,7 +13,8 @@
 
   <div class="row g-4">
     <!-- ===== Calendario ===== -->
-    <div class="col-12 col-md-4 col-lg-3">
+    <!-- Cambiado: col-12 col-md-auto (ancho por contenido) -->
+    <div class="col-12 col-md-auto">
       <div class="card calendar-card">
         <div class="card-header d-flex align-items-center justify-content-between border-0">
           <button class="icon-btn" (click)="mesAnterior()" aria-label="Anterior">
@@ -50,10 +51,10 @@
     </div>
 
     <!-- ===== Agenda del día ===== -->
-    <div class="col-12 col-md-8 col-lg-9">
+    <!-- Cambiado: col-12 col-md (ocupa el resto del ancho) -->
+    <div class="col-12 col-md">
       <div class="card schedule-card">
         <div class="card-header border-0 d-flex align-items-center justify-content-between">
-          <!-- AHORA: dd-MM-yyyy -->
           <h5 class="mb-0">Horarios - {{ etiquetaFechaSeleccionada() }}</h5>
         </div>
 
@@ -72,7 +73,8 @@
                 </div>
               </div>
 
-              <div class="d-flex align-items-center gap-2">
+              <!-- Cambiado: contenedor de acciones que puede “bajar” -->
+              <div class="item-actions d-flex align-items-center gap-2 ms-auto">
                 <!-- Estado -->
                 <span class="status-pill"
                       [class.pendiente]="it.status === 'PENDIENTE'"
@@ -148,7 +150,6 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Fecha</label>
-            <!-- AHORA: dd-MM-yyyy -->
             <input class="form-control" [value]="seleccionado() | date:'dd-MM-yyyy'" disabled>
             <div class="form-text">La fecha se toma del calendario.</div>
           </div>
