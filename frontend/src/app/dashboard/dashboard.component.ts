@@ -51,16 +51,7 @@ citasHoyCount = computed(
     return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   }
 
-  badgeClass(s: CitaStatus) {
-    switch (s) {
-      case 'CONFIRMADA': return 'bg-success';
-      case 'PENDIENTE':  return 'bg-warning text-dark';
-      case 'NUEVA':      return 'bg-info text-dark';
-      case 'FINALIZADA': return 'bg-primary';
-      case 'CANCELADA':  return 'bg-danger';
-      default:           return 'bg-secondary';
-    }
-  }
+ 
 
   etiquetaStatus(s: CitaStatus) {
     // Para mostrar “Confirmada”, “Pendiente”, etc.

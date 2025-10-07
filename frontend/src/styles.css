@@ -25,3 +25,13 @@
   border-radius: 6px 0 0 6px;
   font-weight: bold;
 }
+
+/* ===== Píldoras de estado (global) ===== */
+/* Píldoras de estado (dashboard y agenda)*/
+.status-pill { font-size: 12px; border-radius: 999px; padding: 6px 10px; font-weight: 700; background: #e5e7eb; color: #374151; }
+.status-pill.confirmada { background: #dcfce7; color: #166534; } /* verde */
+.status-pill.pendiente  { background: #fef9c3; color: #b66a06ef; } /* amarillo */
+.status-pill.nueva      { background: #dbeafe; color: #0635b8; } /* azul */
+.status-pill.finalizada { background: #b8c8db; color: #383b42; } /* gris */
+.status-pill.cancelada  { background: #fee2e2; color: #991b1b; } /* rojo */
+

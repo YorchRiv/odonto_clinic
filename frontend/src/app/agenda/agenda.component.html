@@ -13,7 +13,6 @@
 
   <div class="row g-4">
     <!-- ===== Calendario ===== -->
-    <!-- Cambiado: col-12 col-md-auto (ancho por contenido) -->
     <div class="col-12 col-md-auto">
       <div class="card calendar-card">
         <div class="card-header d-flex align-items-center justify-content-between border-0">
@@ -51,17 +50,34 @@
     </div>
 
     <!-- ===== Agenda del día ===== -->
-    <!-- Cambiado: col-12 col-md (ocupa el resto del ancho) -->
     <div class="col-12 col-md">
       <div class="card schedule-card">
         <div class="card-header border-0 d-flex align-items-center justify-content-between">
           <h5 class="mb-0">Horarios - {{ etiquetaFechaSeleccionada() }}</h5>
+
+          <!-- Dropdown de filtro de estado (como el de Acciones) -->
+          <div class="dropdown">
+            <button
+              class="btn btn-sm btn-outline-secondary dropdown-toggle"
+              data-bs-toggle="dropdown"
+            >
+              {{ labelFiltroActual() }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><button class="dropdown-item" [class.active]="isFiltro('TODAS')" (click)="setFiltro('TODAS')">Todas</button></li>
+              <li><button class="dropdown-item" [class.active]="isFiltro('CONFIRMADA')" (click)="setFiltro('CONFIRMADA')">Confirmada</button></li>
+              <li><button class="dropdown-item" [class.active]="isFiltro('PENDIENTE')" (click)="setFiltro('PENDIENTE')">Pendiente</button></li>
+              <li><button class="dropdown-item" [class.active]="isFiltro('NUEVA')" (click)="setFiltro('NUEVA')">Nueva</button></li>
+              <li><button class="dropdown-item" [class.active]="isFiltro('FINALIZADA')" (click)="setFiltro('FINALIZADA')">Finalizada</button></li>
+              <li><button class="dropdown-item" [class.active]="isFiltro('CANCELADA')" (click)="setFiltro('CANCELADA')">Cancelada</button></li>
+            </ul>
+          </div>
         </div>
 
         <div class="list-group list-group-flush">
           <ng-container *ngIf="agendaDelDia() as dia">
             <button
-              *ngFor="let it of dia.items; trackBy: trackById"
+              *ngFor="let it of itemsFiltrados(dia.items); trackBy: trackById"
               class="list-group-item list-group-item-action d-flex align-items-center justify-content-between item-row"
             >
               <div class="d-flex align-items-center gap-3">
@@ -73,9 +89,8 @@
                 </div>
               </div>
 
-              <!-- Cambiado: contenedor de acciones que puede “bajar” -->
+              <!-- Acciones pildoras / estado -->
               <div class="item-actions d-flex align-items-center gap-2 ms-auto">
-                <!-- Estado -->
                 <span class="status-pill"
                       [class.pendiente]="it.status === 'PENDIENTE'"
                       [class.confirmada]="it.status === 'CONFIRMADA'"
@@ -86,14 +101,12 @@
                   {{ it.status | titlecase }}
                 </span>
 
-                <!-- Si hubiera slot manual -->
                 <button *ngIf="it.status === 'DISPONIBLE'"
                         class="btn btn-light btn-sm slot-btn"
                         (click)="openNuevaCita(it.hora)">
                   <i class="fa-solid fa-plus me-1"></i> Agendar
                 </button>
 
-                <!-- Menú acciones -->
                 <div class="dropdown">
                   <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
                     Acciones
@@ -127,7 +140,6 @@
             </button>
           </ng-container>
 
-          <!-- vacío -->
           <div class="list-group-item text-center py-5 text-muted" *ngIf="!agendaDelDia()">
             Cargando horarios…
           </div>

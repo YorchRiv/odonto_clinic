@@ -27,13 +27,7 @@
 
 .time-badge { width: 70px; text-align: center; font-weight: 700; border-radius: 8px; padding: 6px 0; background: #eef2ff; }
 
-/* Píldoras de estado */
-.status-pill { font-size: 12px; border-radius: 999px; padding: 6px 10px; font-weight: 700; background: #e5e7eb; color: #374151; }
-.status-pill.confirmada { background: #dcfce7; color: #166534; } /* verde */
-.status-pill.pendiente  { background: #fef9c3; color: #a16207; } /* amarillo */
-.status-pill.nueva      { background: #dbeafe; color: #1d4ed8; } /* azul suave */
-.status-pill.finalizada { background: #bfdbfe; color: #1d4ed8; } /* azul + notificación */
-.status-pill.cancelada  { background: #fee2e2; color: #991b1b; } /* rojo */
+
 
 .slot-btn { border-radius: 999px; }
 

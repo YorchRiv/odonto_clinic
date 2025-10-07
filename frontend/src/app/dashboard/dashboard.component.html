@@ -20,10 +20,10 @@
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card text-white border-0 shadow-sm" style="background-color:#fa9624;">
+    <div class="card text-white border-0 shadow-sm" style="background-color:#ff8e43;">
       <div class="card-body">
         <h6 class="mb-1">Pacientes Inactivos</h6>
-        <div class="fs-4 fw-bold">$45,230</div>
+        <div class="fs-4 fw-bold">25</div>
       </div>
     </div>
   </div>
@@ -65,16 +65,25 @@
         <small class="text-muted">{{ hoyKey() }}</small>
       </div>
 
-      <!-- Lista dinámica (máx 3) -->
+      <!-- Lista dinámica de las citas del dia -->
       <ul class="list-group list-group-flush" *ngIf="citasHoyTop().length; else sinCitas">
         <li class="list-group-item d-flex justify-content-between align-items-start"
             *ngFor="let c of citasHoyTop(); trackBy: trackById">
           <div>
             <div class="fw-semibold">{{ c.paciente }}</div>
             <small class="text-muted">{{ c.motivo }} — {{ horaAMPM(c.hora) }}</small>
-          </div>
-          <span class="badge rounded-pill"
-                [ngClass]="badgeClass(c.status)">{{ etiquetaStatus(c.status) }}</span>
+          </div> 
+          
+          <!-- Pildoras de estado -->
+          <span class="status-pill" [ngClass]="{
+        'confirmada': c.status === 'CONFIRMADA',
+        'pendiente':  c.status === 'PENDIENTE',
+        'nueva':      c.status === 'NUEVA',
+        'finalizada': c.status === 'FINALIZADA',
+        'cancelada':  c.status === 'CANCELADA'
+         }">{{ etiquetaStatus(c.status) }}
+          </span>
+
         </li>
       </ul>
 
