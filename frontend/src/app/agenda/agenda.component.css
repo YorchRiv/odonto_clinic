@@ -1,0 +1,42 @@
+/* ===== Layout general ===== */
+.page { padding: 8px 8px 24px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.title { font-size: 24px; margin: 0; }
+.subtitle { margin: 0; color: #6b7280; }
+.btn-new { border-radius: 10px; }
+
+/* ===== Calendario ===== */
+.calendar-card .card-header { background: transparent; }
+.icon-btn { border: 0; background: transparent; padding: 6px 10px; border-radius: 8px; }
+.icon-btn:hover { background: rgba(0,0,0,0.05); }
+.month-label { font-weight: 600; font-size: 16px; }
+
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; }
+.dow { text-align: center; font-size: 12px; color: #6b7280; padding: 4px 0; }
+
+.day { height: 34px; border: 0; border-radius: 8px; background: #f3f4f6; font-weight: 600; color: #374151; }
+.day:hover { filter: brightness(0.97); }
+.day.muted { background: transparent; color: #cbd5e1; }
+.day.today { outline: 2px solid #8b5cf6; }
+.day.selected { background: #8b5cf6; color: #fff; }
+
+/* ===== Agenda del día ===== */
+.schedule-card .card-header { background: transparent; }
+.item-row { padding: 14px 16px; }
+.item-row + .item-row { border-top: 1px solid rgba(0,0,0,0.06); }
+
+.time-badge { width: 70px; text-align: center; font-weight: 700; border-radius: 8px; padding: 6px 0; background: #eef2ff; }
+
+/* Píldoras de estado */
+.status-pill { font-size: 12px; border-radius: 999px; padding: 6px 10px; font-weight: 700; background: #e5e7eb; color: #374151; }
+.status-pill.confirmada { background: #dcfce7; color: #166534; } /* verde */
+.status-pill.pendiente  { background: #fef9c3; color: #a16207; } /* amarillo */
+.status-pill.nueva      { background: #dbeafe; color: #1d4ed8; } /* azul suave */
+.status-pill.finalizada { background: #bfdbfe; color: #1d4ed8; } /* azul + notificación */
+.status-pill.cancelada  { background: #fee2e2; color: #991b1b; } /* rojo */
+
+.slot-btn { border-radius: 999px; }
+
+@media (max-width: 575.98px) {
+  .time-badge { width: 60px; }
+}

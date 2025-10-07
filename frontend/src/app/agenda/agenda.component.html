@@ -1,1 +1,188 @@
-<p>agenda works!</p>
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="title">Agenda</h1>
+      <p class="subtitle">Gestiona las citas y horarios de la clínica</p>
+    </div>
+
+    <!-- Nueva cita → abre modal -->
+    <a href="#" (click)="$event.preventDefault(); openNuevaCita()" class="btn btn-primary btn-new">
+      <i class="fa-solid fa-plus me-2"></i> Nueva Cita
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- ===== Calendario ===== -->
+    <div class="col-12 col-md-4 col-lg-3">
+      <div class="card calendar-card">
+        <div class="card-header d-flex align-items-center justify-content-between border-0">
+          <button class="icon-btn" (click)="mesAnterior()" aria-label="Anterior">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <div class="month-label text-capitalize">{{ etiquetaMes() }}</div>
+          <button class="icon-btn" (click)="mesSiguiente()" aria-label="Siguiente">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <div class="card-body pt-0">
+          <div class="calendar-grid">
+            <div class="dow">Dom</div><div class="dow">Lun</div><div class="dow">Mar</div>
+            <div class="dow">Mié</div><div class="dow">Jue</div><div class="dow">Vie</div><div class="dow">Sáb</div>
+
+            <ng-container *ngFor="let fila of grillaCalendario()">
+              <ng-container *ngFor="let celda of fila">
+                <button
+                  class="day"
+                  [class.muted]="!celda.delMesActual || !celda.date"
+                  [class.today]="celda.esHoy"
+                  [class.selected]="celda.esSeleccionado"
+                  [disabled]="!celda.date"
+                  (click)="elegirDia(celda)"
+                >
+                  {{ celda.numero || '' }}
+                </button>
+              </ng-container>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Agenda del día ===== -->
+    <div class="col-12 col-md-8 col-lg-9">
+      <div class="card schedule-card">
+        <div class="card-header border-0 d-flex align-items-center justify-content-between">
+          <!-- AHORA: dd-MM-yyyy -->
+          <h5 class="mb-0">Horarios - {{ etiquetaFechaSeleccionada() }}</h5>
+        </div>
+
+        <div class="list-group list-group-flush">
+          <ng-container *ngIf="agendaDelDia() as dia">
+            <button
+              *ngFor="let it of dia.items; trackBy: trackById"
+              class="list-group-item list-group-item-action d-flex align-items-center justify-content-between item-row"
+            >
+              <div class="d-flex align-items-center gap-3">
+                <div class="time-badge">{{ it.hora }}</div>
+                <div>
+                  <div class="fw-semibold" *ngIf="it.status !== 'DISPONIBLE'">{{ it.paciente }}</div>
+                  <div class="text-muted small" *ngIf="it.status !== 'DISPONIBLE'">{{ it.motivo }}</div>
+                  <div class="text-muted" *ngIf="it.status === 'DISPONIBLE'">Horario disponible</div>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-center gap-2">
+                <!-- Estado -->
+                <span class="status-pill"
+                      [class.pendiente]="it.status === 'PENDIENTE'"
+                      [class.confirmada]="it.status === 'CONFIRMADA'"
+                      [class.nueva]="it.status === 'NUEVA'"
+                      [class.finalizada]="it.status === 'FINALIZADA'"
+                      [class.cancelada]="it.status === 'CANCELADA'"
+                      *ngIf="it.status !== 'DISPONIBLE'">
+                  {{ it.status | titlecase }}
+                </span>
+
+                <!-- Si hubiera slot manual -->
+                <button *ngIf="it.status === 'DISPONIBLE'"
+                        class="btn btn-light btn-sm slot-btn"
+                        (click)="openNuevaCita(it.hora)">
+                  <i class="fa-solid fa-plus me-1"></i> Agendar
+                </button>
+
+                <!-- Menú acciones -->
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    Acciones
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li *ngIf="it.status !== 'DISPONIBLE'">
+                      <button class="dropdown-item" (click)="openEditarCita(it)">Editar</button>
+                    </li>
+                    <li *ngIf="it.status !== 'DISPONIBLE'">
+                      <button class="dropdown-item" (click)="marcarComo(it.id, 'CONFIRMADA')">Marcar Confirmada</button>
+                    </li>
+                    <li *ngIf="it.status !== 'DISPONIBLE'">
+                      <button class="dropdown-item" (click)="marcarComo(it.id, 'PENDIENTE')">Marcar Pendiente</button>
+                    </li>
+                    <li *ngIf="it.status !== 'DISPONIBLE'">
+                      <button class="dropdown-item" (click)="marcarComo(it.id, 'NUEVA')">Marcar Nueva</button>
+                    </li>
+                    <li *ngIf="it.status !== 'DISPONIBLE'">
+                      <button class="dropdown-item" (click)="marcarComo(it.id, 'FINALIZADA')">Marcar Finalizada</button>
+                    </li>
+                    <li *ngIf="it.status !== 'DISPONIBLE'">
+                      <button class="dropdown-item" (click)="marcarComo(it.id, 'CANCELADA')">Marcar Cancelada</button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li *ngIf="it.status !== 'DISPONIBLE'">
+                      <button class="dropdown-item text-danger" (click)="eliminarCita(it.id)">Eliminar</button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </button>
+          </ng-container>
+
+          <!-- vacío -->
+          <div class="list-group-item text-center py-5 text-muted" *ngIf="!agendaDelDia()">
+            Cargando horarios…
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODAL NUEVA / EDITAR =================== -->
+<div class="modal fade" tabindex="-1" #citaModal>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form #f="ngForm" (ngSubmit)="submitNuevaCita(f)">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editandoId ? 'Editar cita' : 'Nueva cita' }}</h5>
+          <button type="button" class="btn-close" (click)="closeNuevaCita()" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Fecha</label>
+            <!-- AHORA: dd-MM-yyyy -->
+            <input class="form-control" [value]="seleccionado() | date:'dd-MM-yyyy'" disabled>
+            <div class="form-text">La fecha se toma del calendario.</div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Hora</label>
+            <input type="time" class="form-control" name="hora" [(ngModel)]="nuevaCita.hora" required>
+          </div>
+          <div class="text-danger small mb-2" *ngIf="formError()">{{ formError() }}</div>
+
+          <div class="mb-3">
+            <label class="form-label">Paciente</label>
+            <input type="text" class="form-control" name="paciente" [(ngModel)]="nuevaCita.paciente" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Motivo</label>
+            <input type="text" class="form-control" name="motivo" [(ngModel)]="nuevaCita.motivo">
+          </div>
+
+          <div class="mb-1">
+            <label class="form-label">Notas (opcional)</label>
+            <textarea class="form-control" rows="3" name="notas" [(ngModel)]="nuevaCita.notas"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" (click)="closeNuevaCita()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando()">
+            {{ creando() ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear cita') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- ============================================================ -->
