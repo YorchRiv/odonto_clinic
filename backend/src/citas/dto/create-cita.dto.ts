@@ -1,8 +1,11 @@
+import { EstadoCita } from '../../common/enums';
+
 export class CreateCitaDto {
 	pacienteId: number;
 	usuarioId: number;
 	servicioId: number;
-	fecha: Date | string;
-	estado?: 'NUEVA' | 'CONFIRMADA' | 'PENDIENTE' | 'CANCELADA' | 'COMPLETADA';
+	fechaInicio: Date | string;
+	fechaFin: Date | string;
+	estado?: EstadoCita;
 	notas?: string;
 }

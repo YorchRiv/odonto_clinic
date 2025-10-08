@@ -1,3 +1,5 @@
+import { EstadoPaciente } from '../../common/enums';
+
 export class CreatePacienteDto {
 	nombre: string;
 	apellido: string;
@@ -7,6 +9,7 @@ export class CreatePacienteDto {
 	direccion?: string;
 	fechaNacimiento?: Date | string;
 	ultimaVisita?: Date | string;
-	estado?: 'ACTIVO' | 'INACTIVO';
+	estado?: EstadoPaciente;
+	alergias?: string;
 	creadoPorId: number;
 }
