@@ -54,6 +54,7 @@ export class AgendaComponent implements OnInit {
     this.mesRef().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
   );
 
+  /** Encabezado del día en formato dd-MM-yyyy */
   etiquetaFechaSeleccionada = computed(() =>
     this.formateaFechaKey(this.seleccionado())
   );
@@ -86,14 +87,22 @@ export class AgendaComponent implements OnInit {
   creando = signal(false);
   editandoId: string | null = null;
 
+  // Modelo del formulario de cita
   nuevaCita = { hora: '', paciente: '', motivo: '', notas: '' };
   formError = signal<string>('');
 
+  // ====== Fecha del modal (para <input type="date">) ======
+  /** Bind para el input date en formato 'yyyy-MM-dd' */
+  dateInput: string = '';
+
   ngOnInit(): void {
+    // sincroniza input del modal con el seleccionado y carga el día
+    this.dateInput = this.toYMD(this.seleccionado());
     this.cargarAgendaDelDia(this.seleccionado());
   }
 
   // ---------- helpers de fecha ----------
+  /** Devuelve la clave dd-MM-yyyy usada en almacenamiento y consultas */
   private formateaFechaKey(d: Date): string {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -101,17 +110,45 @@ export class AgendaComponent implements OnInit {
     return `${dd}-${mm}-${yyyy}`;
   }
 
+  /** Date -> 'yyyy-MM-dd' (para <input type="date">) */
+  private toYMD(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  /** 'yyyy-MM-dd' -> Date */
+  private fromYMD(s: string): Date {
+    if (!s) return new Date(this.seleccionado());
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  }
+
+  // ---------- respuesta al cambio de fecha en el modal ----------
+  onFechaInputChange(ymd: string) {
+    this.dateInput = ymd;
+    const nueva = this.fromYMD(ymd);
+    // sincroniza con mini-calendario y vuelve a cargar el día
+    this.seleccionado.set(nueva);
+    this.mesRef.set(new Date(nueva.getFullYear(), nueva.getMonth(), 1));
+    this.cargarAgendaDelDia(nueva);
+  }
+
   // ---------- modal ----------
   openNuevaCita(hora?: string) {
     this.editandoId = null;
     this.formError.set('');
+    this.dateInput = this.toYMD(this.seleccionado()); // sincroniza fecha del modal
     this.nuevaCita = { hora: hora ?? '', paciente: '', motivo: '', notas: '' };
     this.ensureModal();
     this.modalRef.show();
   }
+
   openEditarCita(item: CitaItem) {
     this.editandoId = item.id;
     this.formError.set('');
+    this.dateInput = this.toYMD(this.seleccionado()); // mantenemos el día visible
     this.nuevaCita = {
       hora: item.hora,
       paciente: item.paciente ?? '',
@@ -121,9 +158,11 @@ export class AgendaComponent implements OnInit {
     this.ensureModal();
     this.modalRef.show();
   }
+
   closeNuevaCita() {
     this.modalRef?.hide();
   }
+
   private ensureModal() {
     if (!this.modalRef) {
       this.modalRef = new bootstrap.Modal(this.citaModal.nativeElement, {
@@ -136,7 +175,8 @@ export class AgendaComponent implements OnInit {
   submitNuevaCita(form: NgForm) {
     if (form.invalid) return;
 
-    const fechaKey = this.formateaFechaKey(this.seleccionado());
+    // Toma la fecha del input ('yyyy-MM-dd') y la convierte a dd-MM-yyyy
+    const fechaKey = this.formateaFechaKey(this.fromYMD(this.dateInput));
     this.creando.set(true);
     this.formError.set('');
 
@@ -147,7 +187,10 @@ export class AgendaComponent implements OnInit {
           next: () => {
             this.creando.set(false);
             this.closeNuevaCita();
-            this.cargarAgendaDelDia(this.seleccionado());
+            // sincroniza el seleccionado con el dateInput y recarga
+            const d = this.fromYMD(this.dateInput);
+            this.seleccionado.set(d);
+            this.cargarAgendaDelDia(d);
           },
           error: (err: any) => {
             this.creando.set(false);
@@ -157,13 +200,14 @@ export class AgendaComponent implements OnInit {
           },
         });
     } else {
+      // Nota: con el mock actual no movemos la cita de día al editar.
       this.agendaSrv
         .actualizarCita(this.editandoId, fechaKey, this.nuevaCita)
         .subscribe({
           next: () => {
             this.creando.set(false);
             this.closeNuevaCita();
-            this.cargarAgendaDelDia(this.seleccionado());
+            this.cargarAgendaDelDia(this.fromYMD(this.dateInput));
           },
           error: (err: any) => {
             this.creando.set(false);
@@ -189,6 +233,7 @@ export class AgendaComponent implements OnInit {
     if (!celda.date) return;
     this.seleccionado.set(celda.date);
     this.mesRef.set(new Date(celda.date.getFullYear(), celda.date.getMonth(), 1));
+    this.dateInput = this.toYMD(celda.date); // <— sincroniza el input del modal
     this.cargarAgendaDelDia(celda.date);
   }
 
@@ -202,52 +247,28 @@ export class AgendaComponent implements OnInit {
 
   // ---------- construir grilla ----------
   private construirGrilla(mesRef: Date, seleccionado: Date): DiaCalendario[][] {
-    const y = mesRef.getFullYear(),
-      m = mesRef.getMonth();
-    const primeroMes = new Date(y, m, 1),
-      inicioSemana = primeroMes.getDay(); // 0=Dom
+    const y = mesRef.getFullYear(), m = mesRef.getMonth();
+    const primeroMes = new Date(y, m, 1), inicioSemana = primeroMes.getDay(); // 0=Dom
     const diasEnMes = new Date(y, m + 1, 0).getDate();
 
     const celdas: DiaCalendario[] = [];
     for (let i = 0; i < inicioSemana; i++)
-      celdas.push({
-        date: null,
-        delMesActual: false,
-        esHoy: false,
-        esSeleccionado: false,
-      });
+      celdas.push({ date: null, delMesActual: false, esHoy: false, esSeleccionado: false });
 
     for (let d = 1; d <= diasEnMes; d++) {
       const fecha = new Date(y, m, d);
       const esHoy = this.esMismaFecha(fecha, this.hoy);
       const esSel = this.esMismaFecha(fecha, seleccionado);
-      celdas.push({
-        date: fecha,
-        numero: d,
-        delMesActual: true,
-        esHoy,
-        esSeleccionado: esSel,
-      });
+      celdas.push({ date: fecha, numero: d, delMesActual: true, esHoy, esSeleccionado: esSel });
     }
 
     while (celdas.length % 7 !== 0)
-      celdas.push({
-        date: null,
-        delMesActual: false,
-        esHoy: false,
-        esSeleccionado: false,
-      });
+      celdas.push({ date: null, delMesActual: false, esHoy: false, esSeleccionado: false });
     while (celdas.length < 42)
-      celdas.push({
-        date: null,
-        delMesActual: false,
-        esHoy: false,
-        esSeleccionado: false,
-      });
+      celdas.push({ date: null, delMesActual: false, esHoy: false, esSeleccionado: false });
 
     const filas: DiaCalendario[][] = [];
-    for (let i = 0; i < celdas.length; i += 7)
-      filas.push(celdas.slice(i, i + 7));
+    for (let i = 0; i < celdas.length; i += 7) filas.push(celdas.slice(i, i + 7));
     return filas;
   }
 

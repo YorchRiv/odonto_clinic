@@ -9,7 +9,7 @@ export type CitaStatus =
   | 'NUEVA'
   | 'FINALIZADA'
   | 'CANCELADA'
-  | 'DISPONIBLE'; // lo dejamos por si más adelante quieres slots manuales
+  | 'DISPONIBLE';
 
 export interface CitaItem {
   id: string;
@@ -57,13 +57,14 @@ export class AgendaService {
     return this.http.patch<CitaItem>(`${this.baseUrl}/citas/${id}/status`, { status });
   }
 
-  /** PATCH /citas/:id  (editar hora/paciente/motivo/notas) */
+  /** PATCH /citas/:id  (editar hora/paciente/motivo/notas y permite CAMBIAR de día) */
   actualizarCita(
     id: string,
     fechaISO: string,
     payload: Partial<Pick<CitaItem, 'hora'|'paciente'|'motivo'|'notas'>>
   ): Observable<CitaItem> {
     if (this.useMock) return this.mock_actualizarCita(id, fechaISO, payload).pipe(delay(120));
+    // En backend real, PATCH /citas/:id aceptaría nueva fecha/hora y movería la cita.
     return this.http.patch<CitaItem>(`${this.baseUrl}/citas/${id}`, payload);
   }
 
@@ -101,9 +102,18 @@ export class AgendaService {
     const target = this.normHora(hora);
     return items.some(c =>
       c.hora === target &&
-      c.status !== 'DISPONIBLE' && // los slots no cuentan como ocupados
+      c.status !== 'DISPONIBLE' &&
       (!ignoreId || c.id !== ignoreId)
     );
+  }
+
+  /** Busca una cita por id en TODO el store */
+  private findById(map: Record<string, CitaItem[]>, id: string): { fecha: string; idx: number } | null {
+    for (const fecha of Object.keys(map)) {
+      const idx = (map[fecha] ?? []).findIndex(c => c.id === id);
+      if (idx >= 0) return { fecha, idx };
+    }
+    return null;
   }
 
   /** —— GET (mock) ——  NO SIEMBRA DATOS por defecto */
@@ -111,7 +121,6 @@ export class AgendaService {
     const map = this.readStore();
     let items = map[fechaISO];
 
-    // Si no hay nada para ese día, lo creamos VACÍO (no se agrega demo).
     if (!items) {
       items = [];
       map[fechaISO] = items;
@@ -146,47 +155,86 @@ export class AgendaService {
     return of(nueva);
   }
 
-  /** —— UPDATE STATUS (mock) —— */
+  /** —— UPDATE STATUS (mock) —— (si no la encuentra en la fecha, busca en todo el store) */
   private mock_actualizarEstado(id: string, status: CitaStatus, fechaISO: string): Observable<CitaItem> {
     const map = this.readStore();
-    const items = map[fechaISO] ?? [];
-    const idx = items.findIndex(c => c.id === id);
-    if (idx < 0) return of({ id, hora: '00:00', status } as CitaItem);
+    let items = map[fechaISO] ?? [];
+    let idx = items.findIndex(c => c.id === id);
+
+    if (idx < 0) {
+      const found = this.findById(map, id);
+      if (!found) return throwError(() => new Error('NO_ENCONTRADA'));
+      items = map[found.fecha];
+      idx = found.idx;
+    }
 
     items[idx] = { ...items[idx], status };
-    map[fechaISO] = items;
     this.writeStore(map);
     return of(items[idx]);
   }
 
-  /** —— UPDATE (mock) —— (valida choque al cambiar hora) */
+  /** —— UPDATE (mock) —— permite mover de día y valida choques en el día destino */
   private mock_actualizarCita(
     id: string,
     fechaISO: string,
     payload: Partial<Pick<CitaItem, 'hora'|'paciente'|'motivo'|'notas'>>
   ): Observable<CitaItem> {
     const map = this.readStore();
-    const items = map[fechaISO] ?? [];
-    const idx = items.findIndex(c => c.id === id);
-    if (idx < 0) return throwError(() => new Error('NO_ENCONTRADA'));
 
-    const newHora = payload.hora ? this.normHora(payload.hora) : items[idx].hora;
-    if (payload.hora && this.horaOcupada(items, newHora, id)) {
+    const located = this.findById(map, id);
+    if (!located) return throwError(() => new Error('NO_ENCONTRADA'));
+
+    const fromFecha = located.fecha;
+    const original = map[fromFecha][located.idx];
+    const targetFecha = fechaISO; // dd-MM-yyyy de destino
+
+    // Normaliza la hora de destino
+    const newHora = payload.hora ? this.normHora(payload.hora) : original.hora;
+
+    // Asegura arreglo destino
+    const targetItems = map[targetFecha] ?? (map[targetFecha] = []);
+
+    // Valida choque en el día destino (ignorando este id)
+    if (this.horaOcupada(targetItems, newHora, id)) {
       return throwError(() => new Error('HORARIO_OCUPADO'));
     }
 
-    const actualizado: CitaItem = { ...items[idx], ...payload, hora: newHora };
-    items[idx] = actualizado;
-    map[fechaISO] = this.sortByHora(items);
+    const actualizado: CitaItem = {
+      ...original,
+      ...payload,
+      hora: newHora,
+    };
+
+    if (fromFecha === targetFecha) {
+      // Misma fecha → solo reemplazar y ordenar
+      map[targetFecha][located.idx] = actualizado;
+      map[targetFecha] = this.sortByHora(map[targetFecha]);
+    } else {
+      // Cambió de fecha → remover del día original y agregar al nuevo
+      map[fromFecha] = (map[fromFecha] ?? []).filter(c => c.id !== id);
+      map[targetFecha] = this.sortByHora([...targetItems, actualizado]);
+    }
+
     this.writeStore(map);
     return of(actualizado);
   }
 
-  /** —— DELETE (mock) —— */
+  /** —— DELETE (mock) —— si no la encuentra en la fecha, busca en todo el store */
   private mock_eliminarCita(fechaISO: string, id: string): Observable<boolean> {
     const map = this.readStore();
-    const items = map[fechaISO] ?? [];
-    map[fechaISO] = items.filter(c => c.id !== id);
+    let items = map[fechaISO] ?? [];
+    let before = items.length;
+    items = items.filter(c => c.id !== id);
+    map[fechaISO] = items;
+
+    if (items.length === before) {
+      // no estaba en esa fecha → buscar globalmente
+      const found = this.findById(map, id);
+      if (found) {
+        map[found.fecha] = (map[found.fecha] ?? []).filter(c => c.id !== id);
+      }
+    }
+
     this.writeStore(map);
     return of(true);
   }

@@ -55,21 +55,18 @@
         <div class="card-header border-0 d-flex align-items-center justify-content-between">
           <h5 class="mb-0">Horarios - {{ etiquetaFechaSeleccionada() }}</h5>
 
-          <!-- Dropdown de filtro de estado (como el de Acciones) -->
+          <!-- Dropdown de filtro de estado -->
           <div class="dropdown">
-            <button
-              class="btn btn-sm btn-outline-secondary dropdown-toggle"
-              data-bs-toggle="dropdown"
-            >
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
               {{ labelFiltroActual() }}
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-              <li><button class="dropdown-item" [class.active]="isFiltro('TODAS')" (click)="setFiltro('TODAS')">Todas</button></li>
+              <li><button class="dropdown-item" [class.active]="isFiltro('TODAS')"       (click)="setFiltro('TODAS')">Todas</button></li>
               <li><button class="dropdown-item" [class.active]="isFiltro('CONFIRMADA')" (click)="setFiltro('CONFIRMADA')">Confirmada</button></li>
-              <li><button class="dropdown-item" [class.active]="isFiltro('PENDIENTE')" (click)="setFiltro('PENDIENTE')">Pendiente</button></li>
-              <li><button class="dropdown-item" [class.active]="isFiltro('NUEVA')" (click)="setFiltro('NUEVA')">Nueva</button></li>
+              <li><button class="dropdown-item" [class.active]="isFiltro('PENDIENTE')"  (click)="setFiltro('PENDIENTE')">Pendiente</button></li>
+              <li><button class="dropdown-item" [class.active]="isFiltro('NUEVA')"      (click)="setFiltro('NUEVA')">Nueva</button></li>
               <li><button class="dropdown-item" [class.active]="isFiltro('FINALIZADA')" (click)="setFiltro('FINALIZADA')">Finalizada</button></li>
-              <li><button class="dropdown-item" [class.active]="isFiltro('CANCELADA')" (click)="setFiltro('CANCELADA')">Cancelada</button></li>
+              <li><button class="dropdown-item" [class.active]="isFiltro('CANCELADA')"  (click)="setFiltro('CANCELADA')">Cancelada</button></li>
             </ul>
           </div>
         </div>
@@ -89,7 +86,7 @@
                 </div>
               </div>
 
-              <!-- Acciones pildoras / estado -->
+              <!-- Acciones / estado -->
               <div class="item-actions d-flex align-items-center gap-2 ms-auto">
                 <span class="status-pill"
                       [class.pendiente]="it.status === 'PENDIENTE'"
@@ -160,10 +157,18 @@
         </div>
 
         <div class="modal-body">
+          <!-- AHORA: input type="date" con binding a dateInput -->
           <div class="mb-3">
             <label class="form-label">Fecha</label>
-            <input class="form-control" [value]="seleccionado() | date:'dd-MM-yyyy'" disabled>
-            <div class="form-text">La fecha se toma del calendario.</div>
+            <input
+              type="date"
+              class="form-control"
+              name="fecha"
+              [(ngModel)]="dateInput"
+              (ngModelChange)="onFechaInputChange($event)"
+              required
+            >
+            <div class="form-text">Se guardará como dd-MM-yyyy.</div>
           </div>
 
           <div class="mb-2">
