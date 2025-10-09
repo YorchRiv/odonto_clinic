@@ -1,1 +1,160 @@
-<p>pacientes works!</p>
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="title">Pacientes</h1>
+      <p class="subtitle">Gestiona la información de tus pacientes</p>
+    </div>
+
+    <button class="btn btn-primary btn-new" (click)="openCrear()">
+      <i class="fa-solid fa-user-plus me-2"></i> Nuevo Paciente
+    </button>
+  </div>
+
+  <!-- Barra: buscador + filtro -->
+  <div class="toolbar d-flex gap-3 mb-3">
+    <div class="flex-grow-1">
+      <div class="input-group">
+        <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass"></i></span>
+        <input type="text" class="form-control" placeholder="Buscar pacientes…" [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      </div>
+    </div>
+
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+        {{ filtroLabel() }}
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><button class="dropdown-item" [class.active]="filtro() === 'TODOS'" (click)="setFiltro('TODOS')">Todos los pacientes</button></li>
+        <li><button class="dropdown-item" [class.active]="filtro() === 'ACTIVOS'" (click)="setFiltro('ACTIVOS')">Activos</button></li>
+        <li><button class="dropdown-item" [class.active]="filtro() === 'INACTIVOS'" (click)="setFiltro('INACTIVOS')">Inactivos</button></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 38%;">Paciente</th>
+            <th style="width: 18%;">Teléfono</th>
+            <th style="width: 22%;">Email</th>
+            <th style="width: 12%;">Última Visita</th>
+            <th style="width: 10%;">Estado</th>
+            <th style="width: 10%;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of listaFiltrada(); trackBy: trackById">
+            <td>
+              <div class="d-flex align-items-center gap-3">
+                <div class="avatar">{{ initials(p) }}</div>
+                <div>
+                  <div class="fw-semibold">{{ p.nombres }} {{ p.apellidos }}</div>
+                  <div class="text-muted small" *ngIf="p.dpi">DPI: {{ p.dpi }}</div>
+                </div>
+              </div>
+            </td>
+            <td>{{ p.telefono }}</td>
+            <td>{{ p.email || '—' }}</td>
+            <td>{{ p.ultimaVisita || '—' }}</td>
+            <td>
+              <span [class]="estadoClass(p)">{{ p.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span>
+            </td>
+            <td>
+              <div class="d-flex gap-2">
+                <button class="icon-btn" title="Ver historia clínica" (click)="verHistoria(p)">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+                <button class="icon-btn" title="Editar" (click)="openEditar(p)">
+                  <i class="fa-regular fa-pen-to-square"></i>
+                </button>
+                <button class="icon-btn" title="Agendar cita" (click)="agendar(p)">
+                  <i class="fa-regular fa-calendar"></i>
+                </button>
+                <button class="icon-btn text-danger" title="Eliminar" (click)="eliminar(p)">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="!listaFiltrada().length">
+            <td colspan="6" class="text-center text-muted py-4">Sin pacientes.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODAL CREAR/EDITAR =================== -->
+<div class="modal fade" tabindex="-1" #pacModal>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form #f="ngForm" (ngSubmit)="submit(f)">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editandoId ? 'Editar paciente' : 'Nuevo paciente' }}</h5>
+          <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nombres *</label>
+              <input class="form-control" name="nombres" [(ngModel)]="form.nombres" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Apellidos *</label>
+              <input class="form-control" name="apellidos" [(ngModel)]="form.apellidos" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Teléfono *</label>
+              <input class="form-control" name="telefono" [(ngModel)]="form.telefono" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" name="email" [(ngModel)]="form.email">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">DPI</label>
+              <input class="form-control" name="dpi" [(ngModel)]="form.dpi">
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label">Dirección</label>
+              <input class="form-control" name="direccion" [(ngModel)]="form.direccion">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fecha de nacimiento</label>
+              <input type="date" class="form-control" name="fechaNacimiento" [(ngModel)]="form.fechaNacimiento">
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label">Alergias</label>
+              <input class="form-control" name="alergias" [(ngModel)]="form.alergias">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Estado</label>
+              <select class="form-select" name="estado" [(ngModel)]="form.estado">
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="text-danger small mt-2" *ngIf="formError()">{{ formError() }}</div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando()">
+            {{ creando() ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear paciente') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

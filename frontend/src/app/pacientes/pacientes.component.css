@@ -1,0 +1,27 @@
+.page { padding: 8px 8px 24px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.title { font-size: 24px; margin: 0; }
+.subtitle { margin: 0; color: #6b7280; }
+.btn-new { border-radius: 10px; }
+
+.toolbar .input-group .input-group-text { border-right: 0; }
+.toolbar .form-control { border-left: 0; }
+
+.avatar {
+  width: 36px; height: 36px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; background: #a78bfa;
+}
+
+.icon-btn {
+  border: 0; background: transparent; padding: 6px 8px; border-radius: 8px;
+}
+.icon-btn:hover { background: rgba(0,0,0,.06); }
+
+/* Píldoras de estado paciente */
+.status-pill {
+  font-size: 12px; border-radius: 999px; padding: 6px 10px;
+  font-weight: 700; background: #e5e7eb; color: #374151;
+}
+.status-pill.activo { background: #dcfce7; color: #166534; }     /* verde */
+.status-pill.inactivo { background: #fee2e2; color: #991b1b; }  /* rojo */
