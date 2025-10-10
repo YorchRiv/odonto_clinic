@@ -54,7 +54,17 @@ export class PacientesComponent implements OnInit {
   }
 
   ensureModal() {
-    if (!this.modalRef) this.modalRef = new bootstrap.Modal(this.pacModal.nativeElement, { backdrop: 'static' });
+    if (!this.modalRef) {
+      this.modalRef = new bootstrap.Modal(this.pacModal.nativeElement, { 
+        backdrop: 'static' 
+      });
+      
+      // IMPORTANTE: Agregar evento para resetear estado cuando se cierre el modal
+      this.pacModal.nativeElement.addEventListener('hidden.bs.modal', () => {
+        this.creando.set(false);
+        this.formError.set('');
+      });
+    }
   }
 
   openCrear() {
@@ -85,14 +95,22 @@ export class PacientesComponent implements OnInit {
 
   closeModal() {
     this.modalRef?.hide();
+    // Resetear estado inmediatamente al cerrar
+    this.creando.set(false);
+    this.formError.set('');
   }
 
   // Cargar lista
   load() {
     this.cargando.set(true);
     this.svc.list().subscribe({
-      next: (arr) => { this.pacientes.set(arr); this.cargando.set(false); },
-      error: () => { this.cargando.set(false); }
+      next: (arr) => {
+        this.pacientes.set(arr);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+      }
     });
   }
 
@@ -119,10 +137,16 @@ export class PacientesComponent implements OnInit {
     return arr;
   });
 
-  setFiltro(f: FiltroPac) { this.filtro.set(f); }
-  filtroLabel() { const f = this.filtro(); return f === 'TODOS' ? 'Todos los pacientes' : (f === 'ACTIVOS' ? 'Activos' : 'Inactivos'); }
+  setFiltro(f: FiltroPac) {
+    this.filtro.set(f);
+  }
 
-  // Submit crear / editar
+  filtroLabel() {
+    const f = this.filtro();
+    return f === 'TODOS' ? 'Todos los pacientes' : (f === 'ACTIVOS' ? 'Activos' : 'Inactivos');
+  }
+
+  // Submit crear / editar - CORREGIDO
   submit(f: NgForm) {
     if (f.invalid) return;
 
@@ -131,15 +155,15 @@ export class PacientesComponent implements OnInit {
 
     const payload = {
       ...this.form,
-      // normalizar strings vacíos a undefined para el service
-      email: this.form.email?.trim() || undefined,
-      direccion: this.form.direccion?.trim() || undefined,
-      alergias: this.form.alergias?.trim() || undefined,
-      fechaNacimiento: this.form.fechaNacimiento?.trim() || undefined,
-      dpi: this.form.dpi?.trim() || undefined,
+      // normalizar strings vacíos a null para el service
+      email: this.form.email?.trim() || null,
+      direccion: this.form.direccion?.trim() || null,
+      alergias: this.form.alergias?.trim() || null,
+      fechaNacimiento: this.form.fechaNacimiento?.trim() || null,
+      dpi: this.form.dpi?.trim() || null,
     };
 
-    const obs = this.editandoId
+    const obs = this.editandoId 
       ? this.svc.update(this.editandoId, payload)
       : this.svc.create(payload);
 
@@ -150,9 +174,15 @@ export class PacientesComponent implements OnInit {
         this.load();
       },
       error: (err: any) => {
+        console.error('Error al guardar paciente:', err);
         this.creando.set(false);
-        if (err?.message === 'DPI_DUPLICADO') this.formError.set('El DPI ya existe. Verifica el dato.');
-        else this.formError.set('No se pudo guardar el paciente.');
+        if (err?.message === 'PACIENTE_DUPLICADO') {
+          this.formError.set('Ya existe un paciente con el mismo nombre y apellido.');
+        } else if (err?.message === 'NO_ENCONTRADO') {
+          this.formError.set('Paciente no encontrado.');
+        } else {
+          this.formError.set('Error al guardar el paciente. Intente nuevamente.');
+        }
       }
     });
   }
@@ -165,7 +195,9 @@ export class PacientesComponent implements OnInit {
 
   agendar(p: Paciente) {
     // Navega a agenda y pre-carga el nombre del paciente por query param
-    this.router.navigate(['/agenda'], { queryParams: { paciente: `${p.nombres} ${p.apellidos}` } });
+    this.router.navigate(['/agenda'], { 
+      queryParams: { paciente: `${p.nombres} ${p.apellidos}` } 
+    });
   }
 
   eliminar(p: Paciente) {

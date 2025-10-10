@@ -15,26 +15,27 @@ export interface Paciente {
   alergias?: string | null;
   fechaNacimiento?: string | null; // 'yyyy-MM-dd'
   dpi?: string | null;
-  ultimaVisita?: string | null;    // 'dd-MM-yyyy'
-  createdAt?: string;              // ISO
-  updatedAt?: string;              // ISO
+  ultimaVisita?: string | null; // 'dd-MM-yyyy'
+  createdAt?: string; // ISO
+  updatedAt?: string; // ISO
 }
 
 export type PacienteCreate = Omit<Paciente, 'id'|'estado'|'createdAt'|'updatedAt'|'ultimaVisita'> & {
   estado?: PacienteEstado;
 };
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class PacientesService {
   private http = inject(HttpClient);
-
+  
   // Cambia a false cuando conectes el backend.
   private readonly useMock = true;
   private readonly baseUrl = 'http://localhost:3000';
   private readonly STORAGE_KEY = 'dentalpro_pacientes_v1';
 
   // =============== API Pública (misma forma que usaría backend) ===============
-
   list(): Observable<Paciente[]> {
     if (this.useMock) return this.mock_list().pipe(delay(80));
     return this.http.get<Paciente[]>(`${this.baseUrl}/pacientes`);
@@ -65,10 +66,12 @@ export class PacientesService {
   }
 
   // ============================= MOCK (localStorage) ============================
-
   private readStore(): Paciente[] {
-    try { return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]'); }
-    catch { return []; }
+    try {
+      return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]');
+    } catch {
+      return [];
+    }
   }
 
   private writeStore(arr: Paciente[]) {
@@ -80,7 +83,7 @@ export class PacientesService {
   }
 
   private norm(str?: string | null): string {
-    return (str ?? '').trim();
+    return (str ?? '').trim().toLowerCase();
   }
 
   private mock_list(): Observable<Paciente[]> {
@@ -96,66 +99,85 @@ export class PacientesService {
     return of(p);
   }
 
-  /** Valida DPI duplicado (si viene informado) */
-  private validateDPIUnique(all: Paciente[], dpi?: string | null, ignoreId?: string) {
-    const d = this.norm(dpi);
-    if (!d) return;
-    const exists = all.some(p => this.norm(p.dpi) === d && (!ignoreId || p.id !== ignoreId));
-    if (exists) throw new Error('DPI_DUPLICADO');
+  /** Valida que no exista un paciente con el mismo nombre y apellido */
+  private validateNombreApellidoUnique(all: Paciente[], nombres: string, apellidos: string, ignoreId?: string) {
+    const nomNorm = this.norm(nombres);
+    const apeNorm = this.norm(apellidos);
+    
+    if (!nomNorm || !apeNorm) return;
+    
+    const exists = all.some(p => 
+      this.norm(p.nombres) === nomNorm && 
+      this.norm(p.apellidos) === apeNorm &&
+      (!ignoreId || p.id !== ignoreId)
+    );
+    
+    if (exists) throw new Error('PACIENTE_DUPLICADO');
   }
 
   private mock_create(payload: PacienteCreate): Observable<Paciente> {
-    const all = this.readStore();
-    this.validateDPIUnique(all, payload.dpi);
+    try {
+      const all = this.readStore();
+      
+      // Validar que no exista paciente con mismo nombre y apellido
+      this.validateNombreApellidoUnique(all, payload.nombres, payload.apellidos);
 
-    const nowISO = new Date().toISOString();
-    const nuevo: Paciente = {
-      id: this.uuid(),
-      nombres: this.norm(payload.nombres),
-      apellidos: this.norm(payload.apellidos),
-      telefono: this.norm(payload.telefono),
-      email: this.norm(payload.email || '') || null,
-      direccion: this.norm(payload.direccion || '') || null,
-      estado: payload.estado ?? 'ACTIVO',
-      alergias: this.norm(payload.alergias || '') || null,
-      fechaNacimiento: payload.fechaNacimiento || null,
-      dpi: this.norm(payload.dpi || '') || null,
-      ultimaVisita: null,
-      createdAt: nowISO,
-      updatedAt: nowISO,
-    };
+      const nowISO = new Date().toISOString();
+      const nuevo: Paciente = {
+        id: this.uuid(),
+        nombres: payload.nombres.trim(),
+        apellidos: payload.apellidos.trim(),
+        telefono: payload.telefono.trim(),
+        email: payload.email?.trim() || null,
+        direccion: payload.direccion?.trim() || null,
+        estado: payload.estado ?? 'ACTIVO',
+        alergias: payload.alergias?.trim() || null,
+        fechaNacimiento: payload.fechaNacimiento || null,
+        dpi: payload.dpi?.trim() || null,
+        ultimaVisita: null,
+        createdAt: nowISO,
+        updatedAt: nowISO,
+      };
 
-    all.push(nuevo);
-    this.writeStore(all);
-    return of(nuevo);
+      all.push(nuevo);
+      this.writeStore(all);
+      return of(nuevo);
+    } catch (error) {
+      return throwError(() => error);
+    }
   }
 
   private mock_update(id: string, changes: Partial<Paciente>): Observable<Paciente> {
-    const all = this.readStore();
-    const idx = all.findIndex(p => p.id === id);
-    if (idx < 0) return throwError(() => new Error('NO_ENCONTRADO'));
+    try {
+      const all = this.readStore();
+      const idx = all.findIndex(p => p.id === id);
+      if (idx < 0) return throwError(() => new Error('NO_ENCONTRADO'));
 
-    // Validar DPI único si se pretende cambiar
-    if (typeof changes.dpi !== 'undefined') {
-      this.validateDPIUnique(all, changes.dpi, id);
+      // Validar nombre y apellido único si se pretende cambiar
+      const nombres = typeof changes.nombres !== 'undefined' ? changes.nombres : all[idx].nombres;
+      const apellidos = typeof changes.apellidos !== 'undefined' ? changes.apellidos : all[idx].apellidos;
+      
+      this.validateNombreApellidoUnique(all, nombres, apellidos, id);
+
+      const updated: Paciente = {
+        ...all[idx],
+        ...changes,
+        nombres: typeof changes.nombres !== 'undefined' ? changes.nombres.trim() : all[idx].nombres,
+        apellidos: typeof changes.apellidos !== 'undefined' ? changes.apellidos.trim() : all[idx].apellidos,
+        telefono: typeof changes.telefono !== 'undefined' ? changes.telefono.trim() : all[idx].telefono,
+        email: typeof changes.email !== 'undefined' ? (changes.email?.trim() || null) : all[idx].email,
+        direccion: typeof changes.direccion !== 'undefined' ? (changes.direccion?.trim() || null) : all[idx].direccion,
+        alergias: typeof changes.alergias !== 'undefined' ? (changes.alergias?.trim() || null) : all[idx].alergias,
+        dpi: typeof changes.dpi !== 'undefined' ? (changes.dpi?.trim() || null) : all[idx].dpi,
+        updatedAt: new Date().toISOString(),
+      };
+
+      all[idx] = updated;
+      this.writeStore(all);
+      return of(updated);
+    } catch (error) {
+      return throwError(() => error);
     }
-
-    const updated: Paciente = {
-      ...all[idx],
-      ...changes,
-      nombres: typeof changes.nombres !== 'undefined' ? this.norm(changes.nombres) : all[idx].nombres,
-      apellidos: typeof changes.apellidos !== 'undefined' ? this.norm(changes.apellidos) : all[idx].apellidos,
-      telefono: typeof changes.telefono !== 'undefined' ? this.norm(changes.telefono) : all[idx].telefono,
-      email: typeof changes.email !== 'undefined' ? (this.norm(changes.email || '') || null) : all[idx].email,
-      direccion: typeof changes.direccion !== 'undefined' ? (this.norm(changes.direccion || '') || null) : all[idx].direccion,
-      alergias: typeof changes.alergias !== 'undefined' ? (this.norm(changes.alergias || '') || null) : all[idx].alergias,
-      dpi: typeof changes.dpi !== 'undefined' ? (this.norm(changes.dpi || '') || null) : all[idx].dpi,
-      updatedAt: new Date().toISOString(),
-    };
-
-    all[idx] = updated;
-    this.writeStore(all);
-    return of(updated);
   }
 
   private mock_delete(id: string): Observable<boolean> {
