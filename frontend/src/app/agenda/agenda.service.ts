@@ -14,6 +14,7 @@ export type CitaStatus =
 export interface CitaItem {
   id: string;
   hora: string;          // 'HH:MM' (24h)
+  pacienteId?: string;   // <-- agregado para enlazar con paciente real
   paciente?: string;
   motivo?: string;
   status: CitaStatus;
@@ -45,8 +46,15 @@ export class AgendaService {
     return this.http.get<AgendaDia>(`${this.baseUrl}/agenda`, { params: { date: fechaISO } });
   }
 
-  /** POST /citas */
-  crearCita(body: { fechaISO: string; hora: string; paciente: string; motivo: string; notas?: string }): Observable<CitaItem> {
+  /** POST /citas  (requiere paciente existente) */
+  crearCita(body: {
+    fechaISO: string;
+    hora: string;
+    pacienteId: string;      // id del paciente existente
+    pacienteNombre: string;  // texto a mostrar (UI)
+    motivo: string;
+    notas?: string;
+  }): Observable<CitaItem> {
     if (this.useMock) return this.mock_crearCita(body).pipe(delay(120));
     return this.http.post<CitaItem>(`${this.baseUrl}/citas`, body);
   }
@@ -130,8 +138,15 @@ export class AgendaService {
     return of<AgendaDia>({ fechaISO, items: this.sortByHora(items) });
   }
 
-  /** —— CREATE (mock) —— con validador de choque de horario */
-  private mock_crearCita(body: { fechaISO: string; hora: string; paciente: string; motivo: string; notas?: string }): Observable<CitaItem> {
+  /** —— CREATE (mock) —— requiere paciente existente */
+  private mock_crearCita(body: {
+    fechaISO: string;
+    hora: string;
+    pacienteId: string;
+    pacienteNombre: string;
+    motivo: string;
+    notas?: string;
+  }): Observable<CitaItem> {
     const map = this.readStore();
     const items = map[body.fechaISO] ?? [];
     const hora = this.normHora(body.hora);
@@ -144,7 +159,8 @@ export class AgendaService {
     const nueva: CitaItem = {
       id,
       hora,
-      paciente: body.paciente,
+      pacienteId: body.pacienteId,          // guardamos id de paciente
+      paciente: body.pacienteNombre,        // texto a mostrar
       motivo: body.motivo,
       notas: body.notas,
       status: 'NUEVA',

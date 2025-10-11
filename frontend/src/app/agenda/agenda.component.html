@@ -157,7 +157,7 @@
         </div>
 
         <div class="modal-body">
-          <!-- AHORA: input type="date" con binding a dateInput -->
+          <!-- Fecha -->
           <div class="mb-3">
             <label class="form-label">Fecha</label>
             <input
@@ -171,22 +171,68 @@
             <div class="form-text">Se guardará como dd-MM-yyyy.</div>
           </div>
 
+          <!-- Hora -->
           <div class="mb-2">
             <label class="form-label">Hora</label>
             <input type="time" class="form-control" name="hora" [(ngModel)]="nuevaCita.hora" required>
           </div>
           <div class="text-danger small mb-2" *ngIf="formError()">{{ formError() }}</div>
 
+          <!-- Paciente (autocompletar) -->
           <div class="mb-3">
             <label class="form-label">Paciente</label>
-            <input type="text" class="form-control" name="paciente" [(ngModel)]="nuevaCita.paciente" required>
+            <div class="position-relative">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Escribe nombre, DPI o teléfono…"
+                [ngModel]="pacienteTexto()"
+                (ngModelChange)="onPacienteTextoChange($event)"
+                (blur)="onPacienteBlur()"
+                [ngModelOptions]="{standalone: true}"
+                required
+              />
+
+              <!-- Sugerencias -->
+              <div
+                class="dropdown-menu w-100 show"
+                *ngIf="showSugerencias() && resultadosPacientes().length"
+                style="max-height: 220px; overflow:auto;"
+              >
+                <button
+                  type="button"
+                  class="dropdown-item d-flex align-items-center gap-2"
+                  *ngFor="let p of resultadosPacientes(); trackBy: trackByPacId"
+                  (mousedown)="selectPaciente(p)"
+                >
+                  <span class="badge rounded-pill text-bg-light">{{ initialsPac(p) }}</span>
+                  <span>
+                    <span class="fw-semibold">{{ p.nombres }} {{ p.apellidos }}</span>
+                    <small class="text-muted ms-1" *ngIf="p.dpi">DPI: {{ p.dpi }}</small>
+                  </span>
+                </button>
+              </div>
+
+              <!-- Sin resultados -->
+              <div class="dropdown-menu w-100 show" *ngIf="showSugerencias() && !resultadosPacientes().length">
+                <div class="px-3 py-2 text-muted small">Sin resultados.</div>
+                <div class="px-2 pb-2">
+                  <button type="button" class="btn btn-outline-primary w-100" (mousedown)="irACrearPaciente()">
+                    Crear paciente
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="text-danger small mt-1" *ngIf="pacienteError()">{{ pacienteError() }}</div>
           </div>
 
+          <!-- Motivo -->
           <div class="mb-3">
             <label class="form-label">Motivo</label>
             <input type="text" class="form-control" name="motivo" [(ngModel)]="nuevaCita.motivo">
           </div>
 
+          <!-- Notas -->
           <div class="mb-1">
             <label class="form-label">Notas (opcional)</label>
             <textarea class="form-control" rows="3" name="notas" [(ngModel)]="nuevaCita.notas"></textarea>
@@ -195,7 +241,7 @@
 
         <div class="modal-footer">
           <button type="button" class="btn btn-light" (click)="closeNuevaCita()">Cancelar</button>
-          <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando()">
+          <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando() || !pacienteSeleccionadoId()">
             {{ creando() ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear cita') }}
           </button>
         </div>

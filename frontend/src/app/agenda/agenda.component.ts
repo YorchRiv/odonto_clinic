@@ -10,6 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { AgendaDia, AgendaService, CitaItem } from './agenda.service';
+import { PacientesService, Paciente } from '../pacientes/pacientes.service'; // ajusta ruta si es necesario
 
 declare var bootstrap: any;
 
@@ -40,6 +41,7 @@ type FiltroStatus =
 })
 export class AgendaComponent implements OnInit {
   private agendaSrv = inject(AgendaService);
+  private pacSvc = inject(PacientesService);
 
   // ===== Calendario =====
   hoy = new Date();
@@ -95,10 +97,64 @@ export class AgendaComponent implements OnInit {
   /** Bind para el input date en formato 'yyyy-MM-dd' */
   dateInput: string = '';
 
+  // ====== AUTOCOMPLETE PACIENTE ======
+  pacientes = signal<Paciente[]>([]);
+  pacienteTexto = signal<string>('');             // lo que escribe el usuario
+  pacienteSeleccionadoId = signal<string | null>(null);
+  mostrandoSugerencias = signal<boolean>(false);
+  pacienteError = signal<string>('');
+
+  resultadosPacientes = computed(() => {
+    const q = this.pacienteTexto().trim().toLowerCase();
+    if (!q) return [];
+    return this.pacientes().filter(p => {
+      const full = `${p.nombres} ${p.apellidos}`.toLowerCase();
+      return full.includes(q)
+          || (p.dpi ?? '').toLowerCase().includes(q)
+          || (p.telefono ?? '').toLowerCase().includes(q);
+    }).slice(0, 12);
+  });
+
+  showSugerencias = () => this.mostrandoSugerencias();
+
+  onPacienteTextoChange(val: string) {
+    this.pacienteTexto.set(val);
+    this.pacienteSeleccionadoId.set(null); // al teclear se invalida la selección previa
+    this.mostrandoSugerencias.set(true);
+    this.pacienteError.set('');
+  }
+
+  onPacienteBlur() {
+    setTimeout(() => this.mostrandoSugerencias.set(false), 150);
+  }
+
+  selectPaciente(p: Paciente) {
+    this.pacienteTexto.set(`${p.nombres} ${p.apellidos}`);
+    this.pacienteSeleccionadoId.set(p.id);
+    this.mostrandoSugerencias.set(false);
+    this.pacienteError.set('');
+  }
+
+  initialsPac(p: Paciente) {
+    const a = (p.nombres || ' ')[0] ?? '';
+    const b = (p.apellidos || ' ')[0] ?? '';
+    return `${a}${b}`.toUpperCase();
+  }
+
+  trackByPacId = (_: number, it: Paciente) => it.id;
+
+  irACrearPaciente() {
+    window.location.href = '/pacientes?nuevo=1&nombre=' + encodeURIComponent(this.pacienteTexto());
+  }
+
+  // ===================== Ciclo de vida =====================
   ngOnInit(): void {
     // sincroniza input del modal con el seleccionado y carga el día
     this.dateInput = this.toYMD(this.seleccionado());
     this.cargarAgendaDelDia(this.seleccionado());
+
+    // cargar pacientes para el autocompletado
+    this.pacSvc.list().subscribe(arr => this.pacientes.set(arr));
   }
 
   // ---------- helpers de fecha ----------
@@ -139,8 +195,12 @@ export class AgendaComponent implements OnInit {
   openNuevaCita(hora?: string) {
     this.editandoId = null;
     this.formError.set('');
+    this.pacienteError.set('');
     this.dateInput = this.toYMD(this.seleccionado()); // sincroniza fecha del modal
     this.nuevaCita = { hora: hora ?? '', paciente: '', motivo: '', notas: '' };
+    this.pacienteTexto.set('');
+    this.pacienteSeleccionadoId.set(null);
+    this.mostrandoSugerencias.set(false);
     this.ensureModal();
     this.modalRef.show();
   }
@@ -148,6 +208,7 @@ export class AgendaComponent implements OnInit {
   openEditarCita(item: CitaItem) {
     this.editandoId = item.id;
     this.formError.set('');
+    this.pacienteError.set('');
     this.dateInput = this.toYMD(this.seleccionado()); // mantenemos el día visible
     this.nuevaCita = {
       hora: item.hora,
@@ -155,6 +216,9 @@ export class AgendaComponent implements OnInit {
       motivo: item.motivo ?? '',
       notas: item.notas ?? '',
     };
+    this.pacienteTexto.set(item.paciente ?? '');
+    this.pacienteSeleccionadoId.set(item.pacienteId ?? null);
+    this.mostrandoSugerencias.set(false);
     this.ensureModal();
     this.modalRef.show();
   }
@@ -175,19 +239,32 @@ export class AgendaComponent implements OnInit {
   submitNuevaCita(form: NgForm) {
     if (form.invalid) return;
 
+    // Exigir selección válida de paciente existente
+    if (!this.pacienteSeleccionadoId()) {
+      this.pacienteError.set('Debes seleccionar un paciente existente.');
+      return;
+    }
+
     // Toma la fecha del input ('yyyy-MM-dd') y la convierte a dd-MM-yyyy
     const fechaKey = this.formateaFechaKey(this.fromYMD(this.dateInput));
     this.creando.set(true);
     this.formError.set('');
+    this.pacienteError.set('');
 
     if (!this.editandoId) {
       this.agendaSrv
-        .crearCita({ fechaISO: fechaKey, ...this.nuevaCita })
+        .crearCita({
+          fechaISO: fechaKey,
+          hora: this.nuevaCita.hora,
+          pacienteId: this.pacienteSeleccionadoId()!,   // validado arriba
+          pacienteNombre: this.pacienteTexto().trim(),  // lo que verá la UI
+          motivo: this.nuevaCita.motivo,
+          notas: this.nuevaCita.notas,
+        })
         .subscribe({
           next: () => {
             this.creando.set(false);
             this.closeNuevaCita();
-            // sincroniza el seleccionado con el dateInput y recarga
             const d = this.fromYMD(this.dateInput);
             this.seleccionado.set(d);
             this.cargarAgendaDelDia(d);
@@ -202,7 +279,12 @@ export class AgendaComponent implements OnInit {
     } else {
       // Nota: con el mock actual no movemos la cita de día al editar.
       this.agendaSrv
-        .actualizarCita(this.editandoId, fechaKey, this.nuevaCita)
+        .actualizarCita(this.editandoId, fechaKey, {
+          hora: this.nuevaCita.hora,
+          paciente: this.pacienteTexto().trim(),
+          motivo: this.nuevaCita.motivo,
+          notas: this.nuevaCita.notas,
+        })
         .subscribe({
           next: () => {
             this.creando.set(false);
