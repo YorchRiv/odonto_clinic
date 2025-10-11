@@ -2,6 +2,7 @@ import { Component, ElementRef, ViewChild, inject, signal, computed, OnInit } fr
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { AgendaService, CitaItem, CitaStatus } from '../agenda/agenda.service';
+import { PacientesService, PacienteCreate, PacienteEstado } from '../pacientes/pacientes.service';
 
 declare var bootstrap: any;
 
@@ -14,14 +15,15 @@ declare var bootstrap: any;
 })
 export class DashboardComponent implements OnInit {
   private agendaSrv = inject(AgendaService);
+  private pacientesSrv = inject(PacientesService);
 
   // ===== Próximas citas (hoy) =====
   citasHoy = signal<CitaItem[]>([]);
 
   //contador reactivo de citas del día
-citasHoyCount = computed(
-  () => this.citasHoy().filter(c => c.status !== 'DISPONIBLE').length
-);
+  citasHoyCount = computed(
+    () => this.citasHoy().filter(c => c.status !== 'DISPONIBLE').length
+  );
 
   citasHoyTop = computed(() => this.citasHoy()); //muestra todas las citas
   ngOnInit(): void {
@@ -51,10 +53,8 @@ citasHoyCount = computed(
     return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   }
 
- 
-
   etiquetaStatus(s: CitaStatus) {
-    // Para mostrar “Confirmada”, “Pendiente”, etc.
+    // Para mostrar "Confirmada", "Pendiente", etc.
     const map: Record<CitaStatus, string> = {
       CONFIRMADA: 'Confirmada',
       PENDIENTE:  'Pendiente',
@@ -70,7 +70,10 @@ citasHoyCount = computed(
 
   // ===== Modal: Nueva Cita (reutiliza AgendaService) =====
   @ViewChild('crearCitaModal') crearCitaModal!: ElementRef;
+  @ViewChild('nuevoPacienteModal') nuevoPacienteModal!: ElementRef;
+  
   private modalRef: any;
+  private pacienteModalRef: any;
 
   creando = signal(false);
   formError = signal('');
@@ -78,6 +81,23 @@ citasHoyCount = computed(
   form = { hora: '', paciente: '', motivo: '', notas: '' };
   dateInput = ''; // yyyy-MM-dd
 
+  // ===== Modal: Nuevo Paciente =====
+  guardandoPaciente = signal(false);
+  pacienteFormError = signal('');
+
+  pacienteFormData = {
+    nombres: '',
+    apellidos: '',
+    telefono: '',
+    email: '',
+    direccion: '',
+    estado: 'ACTIVO' as PacienteEstado,
+    alergias: '',
+    fechaNacimiento: '',
+    dpi: ''
+  };
+
+  // ===== MÉTODOS PARA MODAL DE CITA =====
   openNuevaCita() {
     this.formError.set('');
     this.form = { hora: '', paciente: '', motivo: '', notas: '' };
@@ -94,7 +114,10 @@ citasHoyCount = computed(
     this.modalRef.show();
   }
 
-  closeNuevaCita() { this.modalRef?.hide(); }
+  closeNuevaCita() { 
+    this.modalRef?.hide();
+    this.creando.set(false);
+  }
 
   private ensureModal() {
     if (!this.modalRef) {
@@ -131,6 +154,78 @@ citasHoyCount = computed(
         this.creando.set(false);
         if (err?.message === 'HORARIO_OCUPADO') this.formError.set('Ya existe una cita a esa hora para esa fecha.');
         else this.formError.set('No se pudo crear la cita.');
+      }
+    });
+  }
+
+  // ===== MÉTODOS PARA MODAL DE PACIENTE =====
+  openNuevoPaciente() {
+    this.pacienteFormError.set('');
+    this.pacienteFormData = {
+      nombres: '',
+      apellidos: '',
+      telefono: '',
+      email: '',
+      direccion: '',
+      estado: 'ACTIVO',
+      alergias: '',
+      fechaNacimiento: '',
+      dpi: ''
+    };
+
+    this.ensurePacienteModal();
+    this.pacienteModalRef.show();
+  }
+
+  closeNuevoPaciente() { 
+    this.pacienteModalRef?.hide();
+    this.guardandoPaciente.set(false);
+  }
+
+  private ensurePacienteModal() {
+    if (!this.pacienteModalRef) {
+      this.pacienteModalRef = new bootstrap.Modal(this.nuevoPacienteModal.nativeElement, { 
+        backdrop: 'static' 
+      });
+      
+      // Resetear estado cuando se cierre el modal
+      this.nuevoPacienteModal.nativeElement.addEventListener('hidden.bs.modal', () => {
+        this.guardandoPaciente.set(false);
+        this.pacienteFormError.set('');
+      });
+    }
+  }
+
+  submitNuevoPaciente(f: NgForm) {
+    if (f.invalid) return;
+
+    this.guardandoPaciente.set(true);
+    this.pacienteFormError.set('');
+
+    const payload: PacienteCreate = {
+      ...this.pacienteFormData,
+      // normalizar strings vacíos a null
+      email: this.pacienteFormData.email?.trim() || null,
+      direccion: this.pacienteFormData.direccion?.trim() || null,
+      alergias: this.pacienteFormData.alergias?.trim() || null,
+      fechaNacimiento: this.pacienteFormData.fechaNacimiento?.trim() || null,
+      dpi: this.pacienteFormData.dpi?.trim() || null,
+    };
+
+    this.pacientesSrv.create(payload).subscribe({
+      next: () => {
+        this.guardandoPaciente.set(false);
+        this.closeNuevoPaciente();
+        // Aquí podrías actualizar las métricas de pacientes si las tuvieras
+        console.log('Paciente creado exitosamente desde dashboard');
+      },
+      error: (err: any) => {
+        this.guardandoPaciente.set(false);
+        if (err?.message === 'PACIENTE_DUPLICADO') {
+          this.pacienteFormError.set('Ya existe un paciente con el mismo nombre y apellido.');
+        } else {
+          this.pacienteFormError.set('Error al guardar el paciente. Intente nuevamente.');
+        }
       }
     });
   }

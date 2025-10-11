@@ -47,9 +47,12 @@
         <button class="btn btn-primary w-100 mb-3" (click)="openNuevaCita()">
           <i class="fa-solid fa-calendar-plus me-2"></i> Nueva Cita
         </button>
-        <button class="btn btn-success w-100 mb-3">
+        
+        <!-- BOTÓN NUEVO PACIENTE ACTUALIZADO -->
+        <button class="btn btn-success w-100 mb-3" (click)="openNuevoPaciente()">
           <i class="fa-solid fa-user-plus me-2"></i> Nuevo Paciente
         </button>
+        
         <button class="btn w-100 text-white" style="background-color:#7c3aed;">
           <i class="fa-solid fa-file-medical me-2"></i> Nueva Historia
         </button>
@@ -97,7 +100,7 @@
   </div>
 </div>
 
-<!-- =============== MODAL: Nueva Cita (reutiliza AgendaService) =============== -->
+<!-- =============== MODAL: Nueva Cita =============== -->
 <div class="modal fade" tabindex="-1" #crearCitaModal>
   <div class="modal-dialog">
     <div class="modal-content">
@@ -146,4 +149,67 @@
     </div>
   </div>
 </div>
-<!-- ======================================================================== -->
+
+<!-- =============== MODAL: Nuevo Paciente =============== -->
+<div class="modal fade" tabindex="-1" #nuevoPacienteModal>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form #pacienteForm="ngForm" (ngSubmit)="submitNuevoPaciente(pacienteForm)">
+        <div class="modal-header">
+          <h5 class="modal-title">Nuevo paciente</h5>
+          <button type="button" class="btn-close" (click)="closeNuevoPaciente()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nombres *</label>
+              <input class="form-control" name="nombres" [(ngModel)]="pacienteFormData.nombres" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Apellidos *</label>
+              <input class="form-control" name="apellidos" [(ngModel)]="pacienteFormData.apellidos" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Teléfono *</label>
+              <input class="form-control" name="telefono" [(ngModel)]="pacienteFormData.telefono" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" name="email" [(ngModel)]="pacienteFormData.email">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">DPI</label>
+              <input class="form-control" name="dpi" [(ngModel)]="pacienteFormData.dpi">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Dirección</label>
+              <input class="form-control" name="direccion" [(ngModel)]="pacienteFormData.direccion">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fecha de nacimiento</label>
+              <input type="date" class="form-control" name="fechaNacimiento" [(ngModel)]="pacienteFormData.fechaNacimiento">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Alergias</label>
+              <input class="form-control" name="alergias" [(ngModel)]="pacienteFormData.alergias">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Estado</label>
+              <select class="form-select" name="estado" [(ngModel)]="pacienteFormData.estado">
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+              </select>
+            </div>
+          </div>
+          <div class="text-danger small mt-2" *ngIf="pacienteFormError()">{{ pacienteFormError() }}</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" (click)="closeNuevoPaciente()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="pacienteForm.invalid || guardandoPaciente()">
+            {{ guardandoPaciente() ? 'Guardando…' : 'Crear paciente' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
