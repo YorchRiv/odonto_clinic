@@ -1,0 +1,105 @@
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.avatar-large {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.status-pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-pill.confirmada {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-pill.pendiente {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-pill.nueva {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-pill.finalizada {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.status-pill.cancelada {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.status-pill.disponible {
+  background-color: #f0fdf4;
+  color: #166534;
+}
+
+.status-pill.activo {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-pill.inactivo {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
+
+.dropdown-menu {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .avatar-large {
+    width: 50px;
+    height: 50px;
+    font-size: 16px;
+  }
+}
