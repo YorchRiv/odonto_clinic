@@ -4,14 +4,14 @@ import { Observable, of, throwError, delay } from 'rxjs';
 import { CitaItem } from '../agenda/agenda.service';
 import { Paciente } from '../pacientes/pacientes.service';
 
+export type CitaConFecha = CitaItem & { fechaISO: string };
+
 export interface HistoriaClinica {
   paciente: Paciente;
-  citas: CitaItem[];
+  citas: CitaConFecha[];
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class HistoriaClinicaService {
   private http = inject(HttpClient);
   private readonly useMock = true;
@@ -25,28 +25,23 @@ export class HistoriaClinicaService {
 
   buscarPacientes(query: string): Observable<Paciente[]> {
     if (this.useMock) return this.mock_buscarPacientes(query).pipe(delay(80));
-    return this.http.get<Paciente[]>(`${this.baseUrl}/pacientes`, { 
-      params: { search: query } 
-    });
+    return this.http.get<Paciente[]>(`${this.baseUrl}/pacientes`, { params: { search: query } });
   }
 
   // ============================= MOCK ============================
   private mock_buscarPacientes(query: string): Observable<Paciente[]> {
-    // Leer pacientes existentes del localStorage
     const pacientesStorage = localStorage.getItem('dentalpro_pacientes_v1');
     const pacientes: Paciente[] = pacientesStorage ? JSON.parse(pacientesStorage) : [];
-    
     if (!query.trim()) return of([]);
-    
+
     const q = query.toLowerCase().trim();
-    const resultados = pacientes.filter(p => 
+    const resultados = pacientes.filter(p =>
       `${p.nombres} ${p.apellidos}`.toLowerCase().includes(q) ||
       (p.telefono ?? '').toLowerCase().includes(q) ||
       (p.email ?? '').toLowerCase().includes(q) ||
       (p.dpi ?? '').toLowerCase().includes(q)
     );
-    
-    return of(resultados.slice(0, 10)); // Limitar a 10 resultados
+    return of(resultados.slice(0, 10));
   }
 
   private mock_getHistoriaClinica(pacienteId: string): Observable<HistoriaClinica> {
@@ -54,36 +49,38 @@ export class HistoriaClinicaService {
     const pacientesStorage = localStorage.getItem('dentalpro_pacientes_v1');
     const pacientes: Paciente[] = pacientesStorage ? JSON.parse(pacientesStorage) : [];
     const paciente = pacientes.find(p => p.id === pacienteId);
-    
-    if (!paciente) {
-      return throwError(() => new Error('PACIENTE_NO_ENCONTRADO'));
-    }
+    if (!paciente) return throwError(() => new Error('PACIENTE_NO_ENCONTRADO'));
 
-    // Leer todas las citas del paciente
+    // Leer agenda (por día)
     const agendaStorage = localStorage.getItem('dentalpro_agenda_v1');
     const agenda: Record<string, CitaItem[]> = agendaStorage ? JSON.parse(agendaStorage) : {};
-    
-    let todasLasCitas: CitaItem[] = [];
-    
-    // Recorrer todas las fechas y buscar citas del paciente
-    Object.keys(agenda).forEach(fecha => {
-      const citasDelDia = agenda[fecha] || [];
-      const citasDelPaciente = citasDelDia.filter(cita => 
-        cita.pacienteId === pacienteId || cita.paciente === `${paciente.nombres} ${paciente.apellidos}`
-      );
-      todasLasCitas = [...todasLasCitas, ...citasDelPaciente];
+
+    let todas: CitaConFecha[] = [];
+    Object.keys(agenda).forEach(fechaISO => {
+      const citasDelDia = agenda[fechaISO] || [];
+      const citasDelPaciente = citasDelDia
+        .filter(c =>
+          c.pacienteId === pacienteId ||
+          c.paciente === `${paciente.nombres} ${paciente.apellidos}`
+        )
+        .map(c => ({ ...c, fechaISO } as CitaConFecha));
+      todas = [...todas, ...citasDelPaciente];
     });
 
-    // Ordenar citas por fecha (más reciente primero)
-    todasLasCitas.sort((a, b) => {
-      // Para simplificar, ordenar por hora si no tenemos fecha específica
-      // En un caso real, deberíamos tener la fecha en cada cita
-      return b.hora.localeCompare(a.hora);
-    });
+    // Orden cronológico ascendente por fecha + hora
+    todas.sort((a, b) => this.compareFechaHora(a.fechaISO, a.hora, b.fechaISO, b.hora));
 
-    return of({
-      paciente,
-      citas: todasLasCitas
-    });
+    return of({ paciente, citas: todas });
+  }
+
+  private compareFechaHora(f1: string, h1: string, f2: string, h2: string) {
+    // f: dd-MM-yyyy ; h: HH:MM
+    const [d1, m1, y1] = f1.split('-').map(Number);
+    const [d2, m2, y2] = f2.split('-').map(Number);
+    const [hh1, mm1] = (h1 ?? '00:00').split(':').map(Number);
+    const [hh2, mm2] = (h2 ?? '00:00').split(':').map(Number);
+    const A = new Date(y1, (m1 || 1) - 1, d1 || 1, hh1 || 0, mm1 || 0).getTime();
+    const B = new Date(y2, (m2 || 1) - 1, d2 || 1, hh2 || 0, mm2 || 0).getTime();
+    return A - B;
   }
 }

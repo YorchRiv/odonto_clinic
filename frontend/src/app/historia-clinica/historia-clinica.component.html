@@ -1,134 +1,155 @@
 <div class="page">
-  <div class="page-header">
-    <div>
-      <h3 class="title">Historia Clínica</h3>
-      <p class="subtitle">Gestiona las historias clínicas digitales</p>
+
+  <!-- Header compacto + buscador pegajoso -->
+  <div class="page-header page-header-sticky d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div class="header-text">
+      <h3 class="title mb-1">Historia Clínica</h3>
+      <p class="subtitle mb-0">Gestiona las historias clínicas digitales</p>
     </div>
-  </div>
 
-  <!-- Buscador de Pacientes -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-      <div class="row align-items-end">
-        <div class="col-md-8">
-          <label class="form-label fw-semibold">Buscar Paciente</label>
-          <div class="input-group">
-            <span class="input-group-text bg-white">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </span>
-            <input
-              type="text"
-              class="form-control"
-              placeholder="Buscar por nombre y apellido..."
-              [ngModel]="searchQuery()"
-              (ngModelChange)="onSearchChange($event)"
-              (blur)="onSearchBlur()"
-            />
-            @if (searchQuery()) {
-              <button class="btn btn-outline-secondary" type="button" (click)="limpiarBusqueda()">
-                <i class="fa-solid fa-times"></i>
-              </button>
-            }
-          </div>
-
-          <!-- Resultados de búsqueda -->
-          @if (mostrandoResultados() && pacientesEncontrados().length > 0) {
-            <div class="dropdown-menu d-block mt-1 w-100">
-              @for (paciente of pacientesEncontrados(); track trackByPacienteId($index, paciente)) {
-                <button 
-                  class="dropdown-item d-flex align-items-center gap-3 py-2"
-                  (click)="seleccionarPaciente(paciente)"
-                >
-                  <div class="avatar-small">{{ initials(paciente) }}</div>
-                  <div>
-                    <div class="fw-semibold">{{ paciente.nombres }} {{ paciente.apellidos }}</div>
-                    <div class="text-muted small">
-                      {{ paciente.telefono }} • {{ paciente.email || 'Sin email' }}
-                    </div>
-                  </div>
-                </button>
-              }
-            </div>
-          }
-
-          @if (buscando()) {
-            <div class="text-muted small mt-1">
-              <i class="fa-solid fa-spinner fa-spin me-1"></i>
-              Buscando pacientes...
-            </div>
-          }
-
-          @if (mostrandoResultados() && pacientesEncontrados().length === 0 && !buscando()) {
-            <div class="text-muted small mt-1">
-              No se encontraron pacientes con ese criterio.
-            </div>
-          }
-        </div>
-        
-        <div class="col-md-4">
-          @if (pacienteSeleccionado()) {
-            <div class="d-flex align-items-center gap-2 text-success">
-              <i class="fa-solid fa-check-circle"></i>
-              <span>Paciente seleccionado</span>
-            </div>
-          }
-        </div>
+    <!-- Buscador inline -->
+    <div class="search-inline position-relative">
+      <div class="input-group">
+        <span class="input-group-text bg-white">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </span>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Buscar por nombre, apellido, DPI o teléfono..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="onSearchChange($event)"
+          (blur)="onSearchBlur()"
+        />
+        @if (searchQuery()) {
+          <button class="btn btn-outline-secondary" type="button" (click)="limpiarBusqueda()">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        }
       </div>
+
+      <!-- Resultados -->
+      @if (mostrandoResultados() && pacientesEncontrados().length > 0) {
+        <div class="dropdown-menu d-block mt-1 w-100 shadow-sm">
+          @for (paciente of pacientesEncontrados(); track trackByPacienteId($index, paciente)) {
+            <button class="dropdown-item d-flex align-items-center gap-3 py-2"
+                    (click)="seleccionarPaciente(paciente)">
+              <div class="avatar-small">{{ initials(paciente) }}</div>
+              <div class="min-w-0">
+                <div class="fw-semibold text-truncate">{{ paciente.nombres }} {{ paciente.apellidos }}</div>
+                <div class="text-muted small">
+                  {{ paciente.telefono }} • {{ paciente.email || 'Sin email' }}
+                </div>
+              </div>
+            </button>
+          }
+        </div>
+      }
+
+      @if (buscando()) {
+        <div class="text-muted small mt-1">
+          <i class="fa-solid fa-spinner fa-spin me-1"></i> Buscando pacientes...
+        </div>
+      }
+
+      @if (mostrandoResultados() && pacientesEncontrados().length === 0 && !buscando()) {
+        <div class="text-muted small mt-1">No se encontraron pacientes con ese criterio.</div>
+      }
     </div>
   </div>
 
-  <!-- Mensaje de error -->
+  <!-- Error -->
   @if (error()) {
     <div class="alert alert-danger d-flex align-items-center" role="alert">
-      <i class="fa-solid fa-triangle-exclamation me-2"></i>
-      {{ error() }}
+      <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ error() }}
     </div>
   }
 
-  <!-- Contenido principal cuando hay paciente seleccionado -->
+  <!-- Contenido -->
   @if (pacienteSeleccionado() && historiaClinica()) {
     @let paciente = pacienteSeleccionado()!;
     @let historia = historiaClinica()!;
 
     <div class="row g-4">
-      <!-- Columna izquierda: Historial de Citas -->
+      <!-- Historial -->
       <div class="col-lg-8">
         <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-            <span>Historial de Citas</span>
-            <span class="badge bg-primary">{{ historia.citas.length }} citas</span>
+          <div class="card-header bg-white fw-bold d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <div>Historial de Citas</div>
+            <div class="d-flex gap-2 align-items-center">
+              <select class="form-select form-select-sm w-auto"
+                      [ngModel]="filtroEstado()"
+                      (ngModelChange)="filtroEstado.set($event)">
+                <option value="">Todos los estados</option>
+                <option value="NUEVA">Nueva</option>
+                <option value="CONFIRMADA">Confirmada</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="FINALIZADA">Finalizada</option>
+                <option value="CANCELADA">Cancelada</option>
+              </select>
+
+              <button class="btn btn-sm btn-outline-secondary" (click)="ordenDesc.set(!ordenDesc())" type="button">
+                <i class="fa-solid" [class.fa-arrow-down-short-wide]="ordenDesc()" [class.fa-arrow-up-short-wide]="!ordenDesc()"></i>
+                {{ ordenDesc() ? 'Recientes primero' : 'Antiguas primero' }}
+              </button>
+
+              <span class="badge bg-primary ms-auto">{{ historia.citas.length }} citas</span>
+            </div>
           </div>
-          
+
           <div class="card-body p-0">
             @if (historia.citas.length > 0) {
-              <div class="list-group list-group-flush">
-                @for (cita of historia.citas; track trackByCitaId($index, cita)) {
-                  <div class="list-group-item">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                      <div class="fw-semibold">{{ cita.motivo || 'Consulta dental' }}</div>
-                      <span class="status-pill {{ statusClass(cita.status) }}">
-                        {{ etiquetaStatus(cita.status) }}
-                      </span>
+              <div class="list-group list-group-flush cita-list">
+
+                @for (grupo of grupos(); track grupo.fechaISO) {
+
+                  <!-- Encabezado de fecha (colapsable) -->
+                  <div class="cita-date-header d-flex align-items-center justify-content-between"
+                       (click)="toggleGrupo(grupo.fechaISO)">
+                    <div><i class="fa-regular fa-calendar me-1"></i><strong>{{ formatFecha(grupo.fechaISO) }}</strong></div>
+                    <div class="text-muted small">
+                      {{ grupo.items.length }} citas
+                      <i class="fa-solid ms-1" [class.fa-chevron-up]="grupo.open" [class.fa-chevron-down]="!grupo.open"></i>
                     </div>
-                    
-                    <div class="text-muted small mb-2">
-                      <i class="fa-regular fa-clock me-1"></i>
-                      {{ horaAMPM(cita.hora) }}
-                    </div>
-                    
-                    @if (cita.notas) {
-                      <div class="mt-2">
-                        <div class="fw-medium small">Notas:</div>
-                        <div class="text-muted small">{{ cita.notas }}</div>
+                  </div>
+
+                  <div [hidden]="!grupo.open">
+                    @for (cita of grupo.items; track trackByCitaId($index, cita)) {
+                      <div class="list-group-item py-2">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                          <div class="min-w-0">
+                            <div class="fw-semibold text-truncate">
+                              {{ cita.motivo || 'Consulta dental' }}
+                            </div>
+                          </div>
+                          <span class="status-pill {{ statusClass(cita.status) }}">
+                            {{ etiquetaStatus(cita.status) }}
+                          </span>
+                        </div>
+
+                        @if (cita.notas) {
+                          <div class="mt-1">
+                            <div class="text-muted small">
+                              <span class="fw-medium">Notas:</span>
+                              <span [class.text-truncate-2]="!isExpanded(cita.id)">
+                                {{ cita.notas }}
+                              </span>
+                              @if (cita.notas.length > 120) {
+                                <span class="ms-1 link-more" (click)="toggleNote(cita.id)">
+                                  {{ isExpanded(cita.id) ? 'Ver menos' : 'Ver más' }}
+                                </span>
+                              }
+                            </div>
+                          </div>
+                        }
+
+                        <div class="mt-1 pt-2 border-top cita-meta">
+                          <i class="fa-regular fa-calendar me-1"></i>{{ formatFecha(cita.fechaISO) }}
+                          • <i class="fa-regular fa-clock ms-2 me-1"></i>{{ horaAMPM(cita.hora) }}
+                          • <i class="fa-regular fa-id-card ms-2 me-1"></i>{{ cita.id.slice(0, 8) }}
+                        </div>
                       </div>
                     }
-                    
-                    <div class="mt-2 pt-2 border-top">
-                      <small class="text-muted">
-                        <i class="fa-regular fa-id-card me-1"></i>
-                        ID Cita: {{ cita.id.slice(0, 8) }}
-                      </small>
-                    </div>
                   </div>
                 }
               </div>
@@ -143,85 +164,81 @@
         </div>
       </div>
 
-      <!-- Columna derecha: Información del Paciente -->
+      <!-- Información del Paciente (pegajosa) -->
       <div class="col-lg-4">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white fw-bold">
-            Información del Paciente
-          </div>
-          <div class="card-body">
-            <div class="d-flex align-items-center gap-3 mb-4">
-              <div class="avatar-large">{{ initials(paciente) }}</div>
-              <div>
-                <h6 class="mb-0">{{ paciente.nombres }} {{ paciente.apellidos }}</h6>
-                <small class="text-muted">ID: {{ paciente.id.slice(0, 8) }}</small>
-              </div>
-            </div>
-
-            <div class="space-y-3">
-              <div>
-                <label class="form-label small fw-medium mb-1">Teléfono</label>
-                <div class="fw-semibold">{{ paciente.telefono }}</div>
-              </div>
-
-              <div>
-                <label class="form-label small fw-medium mb-1">Email</label>
-                <div class="fw-semibold">{{ paciente.email || 'No registrado' }}</div>
-              </div>
-
-              <div>
-                <label class="form-label small fw-medium mb-1">Fecha de Nacimiento</label>
-                <div class="fw-semibold">{{ formatFecha(paciente.fechaNacimiento) }}</div>
-              </div>
-
-              <div>
-                <label class="form-label small fw-medium mb-1">DPI</label>
-                <div class="fw-semibold">{{ paciente.dpi || 'No registrado' }}</div>
-              </div>
-
-              <div>
-                <label class="form-label small fw-medium mb-1">Dirección</label>
-                <div class="fw-semibold">{{ paciente.direccion || 'No registrada' }}</div>
-              </div>
-
-              <div>
-                <label class="form-label small fw-medium mb-1">Alergias</label>
-                <div class="fw-semibold">{{ paciente.alergias || 'Ninguna registrada' }}</div>
-              </div>
-
-              <div>
-                <label class="form-label small fw-medium mb-1">Estado</label>
-                <span class="status-pill {{ paciente.estado === 'ACTIVO' ? 'activo' : 'inactivo' }}">
-                  {{ paciente.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
-                </span>
-              </div>
-
-              @if (paciente.ultimaVisita) {
+        <div class="sidebar-sticky">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-bold">Información del Paciente</div>
+            <div class="card-body">
+              <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="avatar-large">{{ initials(paciente) }}</div>
                 <div>
-                  <label class="form-label small fw-medium mb-1">Última Visita</label>
-                  <div class="fw-semibold">{{ formatFecha(paciente.ultimaVisita) }}</div>
+                  <h6 class="mb-0 text-truncate">{{ paciente.nombres }} {{ paciente.apellidos }}</h6>
+                  <small class="text-muted">ID: {{ paciente.id.slice(0, 8) }}</small>
                 </div>
-              }
-
-              <div>
-                <label class="form-label small fw-medium mb-1">Fecha de Registro</label>
-                <div class="fw-semibold">{{ formatFecha(paciente.createdAt) }}</div>
               </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="form-label small fw-medium mb-1">Teléfono</label>
+                  <div class="fw-semibold">{{ paciente.telefono }}</div>
+                </div>
+                <div>
+                  <label class="form-label small fw-medium mb-1">Email</label>
+                  <div class="fw-semibold text-truncate">{{ paciente.email || 'No registrado' }}</div>
+                </div>
+                <div>
+                  <label class="form-label small fw-medium mb-1">Fecha de Nacimiento</label>
+                  <div class="fw-semibold">{{ formatFecha(paciente.fechaNacimiento) }}</div>
+                </div>
+                <div>
+                  <label class="form-label small fw-medium mb-1">DPI</label>
+                  <div class="fw-semibold text-truncate">{{ paciente.dpi || 'No registrado' }}</div>
+                </div>
+                <div>
+                  <label class="form-label small fw-medium mb-1">Dirección</label>
+                  <div class="fw-semibold text-truncate">{{ paciente.direccion || 'No registrada' }}</div>
+                </div>
+                <div>
+                  <label class="form-label small fw-medium mb-1">Alergias</label>
+                  <div class="fw-semibold text-truncate">{{ paciente.alergias || 'Ninguna registrada' }}</div>
+                </div>
+                <div>
+                  <label class="form-label small fw-medium mb-1">Estado</label>
+                  <span class="status-pill {{ paciente.estado === 'ACTIVO' ? 'activo' : 'inactivo' }}">
+                    {{ paciente.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
+                @if (paciente.ultimaVisita) {
+                  <div>
+                    <label class="form-label small fw-medium mb-1">Última Visita</label>
+                    <div class="fw-semibold">{{ formatFecha(paciente.ultimaVisita) }}</div>
+                  </div>
+                }
+                <div>
+                  <label class="form-label small fw-medium mb-1">Fecha de Registro</label>
+                  <div class="fw-semibold">{{ formatFecha(paciente.createdAt) }}</div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
       </div>
+
     </div>
+
   } @else if (pacienteSeleccionado() && cargandoHistoria()) {
-    <!-- Loading state -->
+    <!-- Loading -->
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Cargando historia clínica...</span>
       </div>
       <p class="text-muted mt-3">Cargando historia clínica...</p>
     </div>
-  } @else if (!pacienteSeleccionado()) {
-    <!-- Empty state -->
+
+  } @else {
+    <!-- Empty -->
     <div class="text-center py-5">
       <i class="fa-regular fa-user fa-3x text-muted mb-3"></i>
       <h4 class="text-muted">Selecciona un paciente</h4>
