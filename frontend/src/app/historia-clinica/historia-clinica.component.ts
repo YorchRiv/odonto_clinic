@@ -83,7 +83,8 @@ export class HistoriaClinicaComponent implements OnInit {
     return keys.map(k => ({
       fechaISO: k,
       items: (map.get(k) ?? []).slice().sort((a, b) => (a.hora ?? '').localeCompare(b.hora ?? '')),
-      open: openMap[k] ?? true,
+      // DEFAULT: plegado al cargar (false)
+      open: openMap[k] ?? false,
     }));
   });
 
@@ -130,11 +131,17 @@ export class HistoriaClinicaComponent implements OnInit {
       next: (historia) => {
         this.historiaClinica.set(historia);
         this.cargandoHistoria.set(false);
+
         // Reiniciar controles
         this.filtroEstado.set('');
         this.ordenDesc.set(true);
-        this.openByDate.set({});
         this.expandedNotes.clear();
+
+        // PLEGAR TODOS LOS GRUPOS al cargar: generar mapa { fecha: false }
+        const fechas = Array.from(new Set(historia.citas.map(c => c.fechaISO)));
+        const collapsed: Record<string, boolean> = {};
+        fechas.forEach(f => (collapsed[f] = false));
+        this.openByDate.set(collapsed);
       },
       error: (err) => {
         this.error.set('Error al cargar la historia clínica');
@@ -158,7 +165,7 @@ export class HistoriaClinicaComponent implements OnInit {
 
   toggleGrupo(fechaISO: string) {
     const map = { ...this.openByDate() };
-    map[fechaISO] = !(map[fechaISO] ?? true);
+    map[fechaISO] = !(map[fechaISO] ?? false);
     this.openByDate.set(map);
   }
 
