@@ -19,17 +19,21 @@ export class DashboardComponent implements OnInit {
 
   // ===== Próximas citas (hoy) =====
   citasHoy = signal<CitaItem[]>([]);
+  citasHoyCount = computed(() => this.citasHoy().filter(c => c.status !== 'DISPONIBLE').length);
+  citasHoyTop = computed(() => this.citasHoy()); // muestra todas las citas
 
-  //contador reactivo de citas del día
-  citasHoyCount = computed(
-    () => this.citasHoy().filter(c => c.status !== 'DISPONIBLE').length
-  );
-
-  citasHoyTop = computed(() => this.citasHoy()); //muestra todas las citas
+  // ===== Pacientes (para métricas y autocompletar) =====
+  pacientes = signal<Paciente[]>([]);
+  pacActivosCount   = computed(() => this.pacientes().filter(p => p.estado === 'ACTIVO').length);
+  pacInactivosCount = computed(() => this.pacientes().filter(p => p.estado === 'INACTIVO').length);
+  pacTotalCount     = computed(() => this.pacientes().length);
 
   ngOnInit(): void {
     this.cargarCitasHoy();
-    // cargar pacientes para autocompletar en el modal de cita
+    this.refrescarPacientes(); // <-- carga inicial para métricas y autocomplete
+  }
+
+  private refrescarPacientes() {
     this.pacientesSrv.list().subscribe(arr => this.pacientes.set(arr));
   }
 
@@ -53,14 +57,12 @@ export class DashboardComponent implements OnInit {
   }
 
   horaAMPM(hhmm: string): string {
-    // Usa en-US para obtener "AM/PM"
     const [h, m] = hhmm.split(':').map(Number);
     const d = new Date(); d.setHours(h, m, 0, 0);
     return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   }
 
   etiquetaStatus(s: CitaStatus) {
-    // Para mostrar "Confirmada", "Pendiente", etc.
     const map: Record<CitaStatus, string> = {
       CONFIRMADA: 'Confirmada',
       PENDIENTE:  'Pendiente',
@@ -74,23 +76,21 @@ export class DashboardComponent implements OnInit {
 
   trackById = (_:number, it:CitaItem) => it.id;
 
-  // ===== Modal: Nueva Cita (reutiliza AgendaService) =====
+  // ===== Modal: Nueva Cita =====
   @ViewChild('crearCitaModal') crearCitaModal!: ElementRef;
   @ViewChild('nuevoPacienteModal') nuevoPacienteModal!: ElementRef;
-  
+
   private modalRef: any;
   private pacienteModalRef: any;
 
   creando = signal(false);
   formError = signal('');
 
-  // Modelo de la cita
   form = { hora: '', motivo: '', notas: '' };
   dateInput = ''; // yyyy-MM-dd
 
-  // ===== AUTOCOMPLETE PACIENTE (para crear cita) =====
-  pacientes = signal<Paciente[]>([]);
-  pacienteTexto = signal<string>('');                 // lo que escribe el usuario
+  // ===== AUTOCOMPLETE PACIENTE =====
+  pacienteTexto = signal<string>('');
   pacienteSeleccionadoId = signal<string | null>(null);
   mostrandoSugerencias = signal<boolean>(false);
   pacienteError = signal<string>('');
@@ -101,8 +101,8 @@ export class DashboardComponent implements OnInit {
     return this.pacientes().filter((p: Paciente) => {
       const full = `${p.nombres} ${p.apellidos}`.toLowerCase();
       return full.includes(q)
-          || (p.dpi ?? '').toLowerCase().includes(q)
-          || (p.telefono ?? '').toLowerCase().includes(q);
+        || (p.dpi ?? '').toLowerCase().includes(q)
+        || (p.telefono ?? '').toLowerCase().includes(q);
     }).slice(0, 12);
   });
 
@@ -130,11 +130,9 @@ export class DashboardComponent implements OnInit {
     return `${a}${b}`.toUpperCase();
   }
 
-  // trackBy específico para pacientes (evita el error de tipos)
   trackByPacId = (_: number, it: Paciente) => it.id;
 
   irACrearPacienteDesdeCita() {
-    // Puedes redirigir a la pantalla de pacientes con el nombre prellenado
     window.location.href = '/pacientes?nuevo=1&nombre=' + encodeURIComponent(this.pacienteTexto());
   }
 
@@ -144,7 +142,6 @@ export class DashboardComponent implements OnInit {
     this.pacienteError.set('');
     this.form = { hora: '', motivo: '', notas: '' };
 
-    // default: hoy
     const d = new Date();
     this.dateInput = [
       d.getFullYear(),
@@ -152,7 +149,6 @@ export class DashboardComponent implements OnInit {
       String(d.getDate()).padStart(2,'0')
     ].join('-');
 
-    // limpiar estado de autocomplete
     this.pacienteTexto.set('');
     this.pacienteSeleccionadoId.set(null);
     this.mostrandoSugerencias.set(false);
@@ -161,7 +157,7 @@ export class DashboardComponent implements OnInit {
     this.modalRef.show();
   }
 
-  closeNuevaCita() { 
+  closeNuevaCita() {
     this.modalRef?.hide();
     this.creando.set(false);
   }
@@ -180,7 +176,6 @@ export class DashboardComponent implements OnInit {
   submitNuevaCita(f: NgForm) {
     if (f.invalid) return;
 
-    // Validar paciente existente
     if (!this.pacienteSeleccionadoId()) {
       this.pacienteError.set('Debes seleccionar un paciente existente.');
       return;
@@ -188,21 +183,19 @@ export class DashboardComponent implements OnInit {
 
     this.creando.set(true);
     this.formError.set('');
-
     const fechaISO = this.toFechaKey(this.dateInput);
 
     this.agendaSrv.crearCita({
       fechaISO,
       hora: this.form.hora,
-      pacienteId: this.pacienteSeleccionadoId()!,      // id real
-      pacienteNombre: this.pacienteTexto().trim(),     // texto a mostrar
+      pacienteId: this.pacienteSeleccionadoId()!,
+      pacienteNombre: this.pacienteTexto().trim(),
       motivo: this.form.motivo,
       notas: this.form.notas
     }).subscribe({
       next: () => {
         this.creando.set(false);
         this.closeNuevaCita();
-        // Si la cita es para hoy, refrescamos la lista
         if (fechaISO === this.hoyKey()) this.cargarCitasHoy();
       },
       error: (err:any) => {
@@ -213,7 +206,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // ===== Modal: Nuevo Paciente (desde acciones rápidas) =====
+  // ===== Modal: Nuevo Paciente (acciones rápidas) =====
   guardandoPaciente = signal(false);
   pacienteFormError = signal('');
 
@@ -247,18 +240,17 @@ export class DashboardComponent implements OnInit {
     this.pacienteModalRef.show();
   }
 
-  closeNuevoPaciente() { 
+  closeNuevoPaciente() {
     this.pacienteModalRef?.hide();
     this.guardandoPaciente.set(false);
   }
 
   private ensurePacienteModal() {
     if (!this.pacienteModalRef) {
-      this.pacienteModalRef = new bootstrap.Modal(this.nuevoPacienteModal.nativeElement, { 
-        backdrop: 'static' 
+      this.pacienteModalRef = new bootstrap.Modal(this.nuevoPacienteModal.nativeElement, {
+        backdrop: 'static'
       });
-      
-      // Resetear estado cuando se cierre el modal
+
       this.nuevoPacienteModal.nativeElement.addEventListener('hidden.bs.modal', () => {
         this.guardandoPaciente.set(false);
         this.pacienteFormError.set('');
@@ -274,7 +266,6 @@ export class DashboardComponent implements OnInit {
 
     const payload: PacienteCreate = {
       ...this.pacienteFormData,
-      // normalizar strings vacíos a null
       email: this.pacienteFormData.email?.trim() || null,
       direccion: this.pacienteFormData.direccion?.trim() || null,
       alergias: this.pacienteFormData.alergias?.trim() || null,
@@ -286,8 +277,8 @@ export class DashboardComponent implements OnInit {
       next: () => {
         this.guardandoPaciente.set(false);
         this.closeNuevoPaciente();
-        // Refrescar lista para autocompletar inmediatamente
-        this.pacientesSrv.list().subscribe(arr => this.pacientes.set(arr));
+        // Refresca lista => actualiza métricas y autocomplete
+        this.refrescarPacientes();
       },
       error: (err: any) => {
         this.guardandoPaciente.set(false);
