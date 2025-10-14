@@ -137,7 +137,7 @@ export class HistoriaClinicaComponent implements OnInit {
         this.ordenDesc.set(true);
         this.expandedNotes.clear();
 
-        // PLEGAR TODOS LOS GRUPOS al cargar: generar mapa { fecha: false }
+        // PLEGAR TODOS LOS GRUPOS al cargar
         const fechas = Array.from(new Set(historia.citas.map(c => c.fechaISO)));
         const collapsed: Record<string, boolean> = {};
         fechas.forEach(f => (collapsed[f] = false));
@@ -226,6 +226,11 @@ export class HistoriaClinicaComponent implements OnInit {
       DISPONIBLE: 'disponible'
     };
     return map[s] ?? 'pendiente';
+  }
+
+  // === NUEVO: devolver solo el texto del estado
+  estadoTexto(e: 'ACTIVO' | 'INACTIVO') {
+    return e === 'ACTIVO' ? 'Activo' : 'Inactivo';
   }
 
   initials(p: Paciente): string {

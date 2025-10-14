@@ -14,9 +14,9 @@
   <div class="toolbar d-flex gap-3 mb-3">
     <div class="flex-grow-1">
       <div class="input-group">
-        <span class="input-group-text bg-white"
-          ><i class="fa-solid fa-magnifying-glass"></i
-        ></span>
+        <span class="input-group-text bg-white">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </span>
         <input
           type="text"
           class="form-control"
@@ -91,24 +91,15 @@
         <td>{{ p.telefono }}</td>
         <td>{{ p.email || "—" }}</td>
         <td>
-          <span [class]="estadoClass(p)">{{
-            p.estado === "ACTIVO" ? "Activo" : "Inactivo"
-          }}</span>
+          <span [class]="estadoClass(p)">
+            {{ p.estado === "ACTIVO" ? "Activo" : "Inactivo" }}
+          </span>
         </td>
         <td>
           <div class="d-flex gap-2">
-            <button
-              class="icon-btn"
-              title="Ver historia clínica"
-              (click)="verHistoria(p)"
-            >
-              <i class="fa-regular fa-eye"></i>
-            </button>
+            <!-- Solo editar y eliminar -->
             <button class="icon-btn" title="Editar" (click)="openEditar(p)">
               <i class="fa-regular fa-pen-to-square"></i>
-            </button>
-            <button class="icon-btn" title="Agendar cita" (click)="agendar(p)">
-              <i class="fa-regular fa-calendar"></i>
             </button>
             <button
               class="icon-btn text-danger"

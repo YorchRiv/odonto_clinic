@@ -146,7 +146,7 @@
                         <div class="mt-1 pt-2 border-top cita-meta">
                           <i class="fa-regular fa-calendar me-1"></i>{{ formatFecha(cita.fechaISO) }}
                           • <i class="fa-regular fa-clock ms-2 me-1"></i>{{ horaAMPM(cita.hora) }}
-                          <!-- ID oculto: antes mostraba una “placa” con cita.id.slice(0, 8) -->
+                          <!-- ID oculto -->
                         </div>
                       </div>
                     }
@@ -205,9 +205,8 @@
                 </div>
                 <div>
                   <label class="form-label small fw-medium mb-1">Estado</label>
-                  <span class="status-pill {{ paciente.estado === 'ACTIVO' ? 'activo' : 'inactivo' }}">
-                    {{ paciente.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
-                  </span>
+                  <!-- Solo texto: Activo / Inactivo -->
+                  <div class="fw-semibold">{{ estadoTexto(paciente.estado) }}</div>
                 </div>
                 @if (paciente.ultimaVisita) {
                   <div>
@@ -252,4 +251,3 @@
     </div>
   }
 </div>
-
