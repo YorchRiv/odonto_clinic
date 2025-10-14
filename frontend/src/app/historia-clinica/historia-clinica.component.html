@@ -146,7 +146,7 @@
                         <div class="mt-1 pt-2 border-top cita-meta">
                           <i class="fa-regular fa-calendar me-1"></i>{{ formatFecha(cita.fechaISO) }}
                           • <i class="fa-regular fa-clock ms-2 me-1"></i>{{ horaAMPM(cita.hora) }}
-                          • <i class="fa-regular fa-id-card ms-2 me-1"></i>{{ cita.id.slice(0, 8) }}
+                          <!-- ID oculto: antes mostraba una “placa” con cita.id.slice(0, 8) -->
                         </div>
                       </div>
                     }
@@ -252,3 +252,4 @@
     </div>
   }
 </div>
+
