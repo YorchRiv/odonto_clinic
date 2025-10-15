@@ -56,41 +56,50 @@
       <div class="row">
         <div class="col">
           <label>Tipo</label>
-          <select [ngModel]="repCitas()" (ngModelChange)="repCitas.set($event)" [ngModelOptions]="{standalone:true}">
+          <select
+            [ngModel]="repCitas()"
+            (ngModelChange)="repCitas.set($event); generar()"
+            [ngModelOptions]="{standalone:true}">
             <option value="DIARIO">Citas Diarias</option>
             <option value="SEMANAL">Citas Semanales</option>
-            <option value="POR_ESTADO">Citas por Estado</option>
-            <option value="POR_PROCEDIMIENTO">Citas por Procedimiento</option>
+            <option value="MENSUAL">Citas Mensuales</option>
           </select>
         </div>
+
         <div class="col">
           <label>Desde</label>
-          <input type="date" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" [ngModelOptions]="{standalone:true}" />
+          <input
+            type="date"
+            [ngModel]="fechaDesde()"
+            (ngModelChange)="fechaDesde.set($event); generar()"
+            [ngModelOptions]="{standalone:true}"
+          />
         </div>
-        <div class="col">
+
+        <div class="col" [class.disabled]="repCitas()==='DIARIO' || repCitas()==='MENSUAL'">
           <label>Hasta</label>
-          <input type="date" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" [ngModelOptions]="{standalone:true}" />
+          <input
+            type="date"
+            [ngModel]="fechaHasta()"
+            (ngModelChange)="fechaHasta.set($event); generar()"
+            [disabled]="repCitas()==='DIARIO' || repCitas()==='MENSUAL'"
+            [ngModelOptions]="{standalone:true}"
+          />
         </div>
+
         <div class="col">
           <label>Estado</label>
-          <select [ngModel]="estadoCita()" (ngModelChange)="estadoCita.set($event)" [ngModelOptions]="{standalone:true}">
-            <option value="TODAS">Todas</option>
-            <option value="CONFIRMADA">Confirmada</option>
-            <option value="PENDIENTE">Pendiente</option>
+          <select
+            [ngModel]="estadoCita()"
+            (ngModelChange)="estadoCita.set($event); generar()"
+            [ngModelOptions]="{standalone:true}">
+            <option value="TODAS">Todos los estados</option>
             <option value="NUEVA">Nueva</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="CONFIRMADA">Confirmada</option>
             <option value="FINALIZADA">Finalizada</option>
             <option value="CANCELADA">Cancelada</option>
           </select>
-        </div>
-        <div class="col">
-          <label>Procedimiento</label>
-          <input
-            type="text"
-            placeholder="Ej. Limpieza, Caries..."
-            [ngModel]="procedimiento()"
-            (ngModelChange)="procedimiento.set($event)"
-            [ngModelOptions]="{standalone:true}"
-          />
         </div>
       </div>
     </div>
@@ -130,16 +139,6 @@
         <div class="col" *ngIf="repClin()==='TRATAMIENTOS_PERIODO'">
           <label>Hasta</label>
           <input type="date" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" [ngModelOptions]="{standalone:true}" />
-        </div>
-        <div class="col" *ngIf="repClin()==='TRATAMIENTOS_PERIODO'">
-          <label>Procedimiento</label>
-          <input
-            type="text"
-            placeholder="Ej. Endodoncia"
-            [ngModel]="procedimiento()"
-            (ngModelChange)="procedimiento.set($event)"
-            [ngModelOptions]="{standalone:true}"
-          />
         </div>
       </div>
     </div>
