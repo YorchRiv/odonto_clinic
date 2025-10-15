@@ -104,18 +104,10 @@
       </div>
     </div>
 
-    <!-- CLÍNICOS -->
+    <!-- CLÍNICOS (solo historial individual) -->
     <div *ngIf="tab()==='CLINICOS'" class="filters">
       <div class="row">
         <div class="col">
-          <label>Tipo</label>
-          <select [ngModel]="repClin()" (ngModelChange)="repClin.set($event)" [ngModelOptions]="{standalone:true}">
-            <option value="HISTORIAL_INDIVIDUAL">Historial Clínico Individual</option>
-            <option value="TRATAMIENTOS_PERIODO">Tratamientos por Período</option>
-          </select>
-        </div>
-
-        <div class="col" *ngIf="repClin()==='HISTORIAL_INDIVIDUAL'">
           <label>Paciente</label>
           <input
             type="text"
@@ -130,15 +122,6 @@
               <small> · {{ p.telefono }}</small>
             </li>
           </ul>
-        </div>
-
-        <div class="col" *ngIf="repClin()==='TRATAMIENTOS_PERIODO'">
-          <label>Desde</label>
-          <input type="date" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" [ngModelOptions]="{standalone:true}" />
-        </div>
-        <div class="col" *ngIf="repClin()==='TRATAMIENTOS_PERIODO'">
-          <label>Hasta</label>
-          <input type="date" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" [ngModelOptions]="{standalone:true}" />
         </div>
       </div>
     </div>

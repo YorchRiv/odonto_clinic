@@ -28,7 +28,8 @@ export class ReportesComponent implements OnInit {
   tab = signal<Tab>('PACIENTES');
   repPac = signal<'GENERAL' | 'INDIVIDUAL'>('GENERAL');
   repCitas = signal<'DIARIO' | 'SEMANAL' | 'MENSUAL'>('DIARIO');
-  repClin = signal<'HISTORIAL_INDIVIDUAL' | 'TRATAMIENTOS_PERIODO'>('HISTORIAL_INDIVIDUAL');
+  // Clínicos: solo historial individual
+  repClin = signal<'HISTORIAL_INDIVIDUAL'>('HISTORIAL_INDIVIDUAL');
 
   // ===== Filtros =====
   fechaDesde = signal<string>('');
@@ -140,11 +141,8 @@ export class ReportesComponent implements OnInit {
 
     doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.text(title, margin, margin);
 
-    // Construimos columnStyles dinámico para ajustar ID y dejar el resto auto
     const columnStyles: Record<number, any> = {};
-    if (idIndex >= 0) {
-      columnStyles[idIndex] = { cellWidth: 50 }; // ~8-10 caracteres
-    }
+    if (idIndex >= 0) columnStyles[idIndex] = { cellWidth: 50 };
 
     autoTable(doc, {
       startY: margin + 10,
