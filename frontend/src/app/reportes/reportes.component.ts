@@ -104,14 +104,56 @@ export class ReportesComponent implements OnInit {
   }
 
   // ===== Export CSV =====
-  exportCSV() {
-    const cols = this.columnas(); const rows = this.filas(); if (!cols.length) return;
-    const esc = (v: any) => `"${(v ?? '').toString().replace(/"/g, '""')}"`;
-    const head = cols.map(esc).join(',');
-    const body = rows.map(r => cols.map(c => esc(r[c])).join(',')).join('\n');
-    const blob = new Blob([head + '\n' + body], { type: 'text/csv;charset=utf-8' });
-    saveAs(blob, `${this.slug(this.tituloReporte())}.csv`);
-  }
+ // ===== Export CSV =====
+exportCSV() {
+  const cols = this.columnas();
+  const rows = this.filas();
+  if (!cols.length) return;
+
+  // 1) Detectar columnas que deben tratarse SIEMPRE como texto (no perder ceros a la izquierda)
+  const isTextCol = (col: string) =>
+    /^(id|tel[eé]fono|dpi)$/i.test(col.trim());
+
+  // 2) Sanitizar contra CSV injection y normalizar saltos de línea
+  const sanitizeCell = (raw: any, col: string) => {
+    if (raw === null || raw === undefined) return '';
+    let s = String(raw);
+
+    // quita saltos de línea que rompen filas (si quieres conservarlos, comenta la línea siguiente)
+    s = s.replace(/\r?\n/g, ' ');
+
+    // Excel a veces muestra "—" raro; lo normalizamos a guion si lo prefieres:
+    if (s === '—') s = ''; // o s = '-' si quieres guion
+
+    // Si la celda empieza con =, +, -, @ => posible fórmula maliciosa. Prefijamos una comilla.
+    if (/^[=+\-@]/.test(s)) s = "'" + s;
+
+    // Forzar texto: agregamos un tab inicial (Excel respeta como texto sin mostrar el tab)
+    if (isTextCol(col)) s = '\t' + s;
+
+    // Doblar comillas para CSV
+    s = s.replace(/"/g, '""');
+
+    // Envolver en comillas
+    return `"${s}"`;
+  };
+
+  // 3) Encabezado
+  const head = cols.map(c => sanitizeCell(c, c)).join(',');
+
+  // 4) Filas
+  const body = rows
+    .map(r => cols.map(c => sanitizeCell(r[c], c)).join(','))
+    .join('\r\n');
+
+  // 5) BOM + CRLF para Excel (acentos OK y filas correctas)
+  const bom = '\uFEFF';
+  const csv = bom + head + '\r\n' + body;
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  saveAs(blob, `${this.slug(this.tituloReporte())}.csv`);
+}
+
 
   // ===== Export Excel =====
   async exportExcel() {
