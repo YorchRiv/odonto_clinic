@@ -13,9 +13,9 @@ export interface Paciente {
   direccion?: string | null;
   estado: PacienteEstado;
   alergias?: string | null;
-  fechaNacimiento?: string | null; // 'yyyy-MM-dd'
+  fechaNacimiento?: string | null; // 'dd-MM-yyyy'
   dpi?: string | null;
-  ultimaVisita?: string | null; // 'dd-MM-yyyy'
+  
   createdAt?: string; // ISO
   updatedAt?: string; // ISO
 }
@@ -134,7 +134,6 @@ export class PacientesService {
         alergias: payload.alergias?.trim() || null,
         fechaNacimiento: payload.fechaNacimiento || null,
         dpi: payload.dpi?.trim() || null,
-        ultimaVisita: null,
         createdAt: nowISO,
         updatedAt: nowISO,
       };

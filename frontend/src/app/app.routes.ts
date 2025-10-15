@@ -8,6 +8,7 @@ import { ReportesComponent } from './reportes/reportes.component'; // Importa el
 import { ConfiguracionComponent } from './configuracion/configuracion.component'; // Importa el componente de configuracion
 
 export const routes: Routes = [
+	 // raíz -> dashboard
 	{
 		path: '',
 		redirectTo: 'dashboard',

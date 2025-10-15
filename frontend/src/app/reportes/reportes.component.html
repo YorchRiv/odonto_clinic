@@ -1,1 +1,178 @@
-<p>reportes works!</p>
+<div class="rep-wrap">
+  <!-- Header -->
+  <div class="rep-header">
+    <div>
+      <h2 class="title">Reportes</h2>
+      <p class="subtitle">Selecciona tipo, filtra, previsualiza y exporta.</p>
+    </div>
+    <div class="export-buttons">
+      <button class="btn btn-sm btn-outline" (click)="exportPDF()" [disabled]="!columnas().length">PDF</button>
+      <button class="btn btn-sm btn-outline" (click)="exportExcel()" [disabled]="!columnas().length">Excel</button>
+      <button class="btn btn-sm btn-outline" (click)="exportCSV()" [disabled]="!columnas().length">CSV</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="tab()==='PACIENTES'" (click)="tab.set('PACIENTES')">Pacientes</button>
+    <button class="tab" [class.active]="tab()==='CITAS'" (click)="tab.set('CITAS')">Citas</button>
+    <button class="tab" [class.active]="tab()==='CLINICOS'" (click)="tab.set('CLINICOS')">Clínicos</button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card">
+    <!-- PACIENTES -->
+    <div *ngIf="tab()==='PACIENTES'" class="filters">
+      <div class="row">
+        <div class="col">
+          <label>Tipo</label>
+          <select [ngModel]="repPac()" (ngModelChange)="repPac.set($event)" [ngModelOptions]="{standalone:true}">
+            <option value="GENERAL">Reporte General</option>
+            <option value="INDIVIDUAL">Reporte Individual</option>
+          </select>
+        </div>
+
+        <div class="col" *ngIf="repPac()==='INDIVIDUAL'">
+          <label>Paciente</label>
+          <input
+            type="text"
+            [value]="pacienteQuery()"
+            (input)="onPacienteInput($any($event.target).value)"
+            (blur)="blurPaciente()"
+            placeholder="Buscar paciente"
+          />
+          <ul class="sugerencias" *ngIf="showSugerencias()">
+            <li *ngFor="let p of sugerencias" (click)="selectPaciente(p)">
+              <strong>{{ p.nombres }} {{ p.apellidos }}</strong>
+              <small> · {{ p.telefono }}</small>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- CITAS -->
+    <div *ngIf="tab()==='CITAS'" class="filters">
+      <div class="row">
+        <div class="col">
+          <label>Tipo</label>
+          <select [ngModel]="repCitas()" (ngModelChange)="repCitas.set($event)" [ngModelOptions]="{standalone:true}">
+            <option value="DIARIO">Citas Diarias</option>
+            <option value="SEMANAL">Citas Semanales</option>
+            <option value="POR_ESTADO">Citas por Estado</option>
+            <option value="POR_PROCEDIMIENTO">Citas por Procedimiento</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>Desde</label>
+          <input type="date" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" [ngModelOptions]="{standalone:true}" />
+        </div>
+        <div class="col">
+          <label>Hasta</label>
+          <input type="date" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" [ngModelOptions]="{standalone:true}" />
+        </div>
+        <div class="col">
+          <label>Estado</label>
+          <select [ngModel]="estadoCita()" (ngModelChange)="estadoCita.set($event)" [ngModelOptions]="{standalone:true}">
+            <option value="TODAS">Todas</option>
+            <option value="CONFIRMADA">Confirmada</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="NUEVA">Nueva</option>
+            <option value="FINALIZADA">Finalizada</option>
+            <option value="CANCELADA">Cancelada</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>Procedimiento</label>
+          <input
+            type="text"
+            placeholder="Ej. Limpieza, Caries..."
+            [ngModel]="procedimiento()"
+            (ngModelChange)="procedimiento.set($event)"
+            [ngModelOptions]="{standalone:true}"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- CLÍNICOS -->
+    <div *ngIf="tab()==='CLINICOS'" class="filters">
+      <div class="row">
+        <div class="col">
+          <label>Tipo</label>
+          <select [ngModel]="repClin()" (ngModelChange)="repClin.set($event)" [ngModelOptions]="{standalone:true}">
+            <option value="HISTORIAL_INDIVIDUAL">Historial Clínico Individual</option>
+            <option value="TRATAMIENTOS_PERIODO">Tratamientos por Período</option>
+          </select>
+        </div>
+
+        <div class="col" *ngIf="repClin()==='HISTORIAL_INDIVIDUAL'">
+          <label>Paciente</label>
+          <input
+            type="text"
+            [value]="pacienteQuery()"
+            (input)="onPacienteInput($any($event.target).value)"
+            (blur)="blurPaciente()"
+            placeholder="Buscar paciente"
+          />
+          <ul class="sugerencias" *ngIf="showSugerencias()">
+            <li *ngFor="let p of sugerencias" (click)="selectPaciente(p)">
+              <strong>{{ p.nombres }} {{ p.apellidos }}</strong>
+              <small> · {{ p.telefono }}</small>
+            </li>
+          </ul>
+        </div>
+
+        <div class="col" *ngIf="repClin()==='TRATAMIENTOS_PERIODO'">
+          <label>Desde</label>
+          <input type="date" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" [ngModelOptions]="{standalone:true}" />
+        </div>
+        <div class="col" *ngIf="repClin()==='TRATAMIENTOS_PERIODO'">
+          <label>Hasta</label>
+          <input type="date" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" [ngModelOptions]="{standalone:true}" />
+        </div>
+        <div class="col" *ngIf="repClin()==='TRATAMIENTOS_PERIODO'">
+          <label>Procedimiento</label>
+          <input
+            type="text"
+            placeholder="Ej. Endodoncia"
+            [ngModel]="procedimiento()"
+            (ngModelChange)="procedimiento.set($event)"
+            [ngModelOptions]="{standalone:true}"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" (click)="generar()">
+        {{ cargando() ? 'Generando...' : 'Generar reporte' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Vista previa -->
+  <div class="card">
+    <div class="preview-head">
+      <h3>{{ tituloReporte() }}</h3>
+      <span class="hint" *ngIf="!columnas().length && !cargando()">Genera un reporte para ver la previsualización.</span>
+    </div>
+
+    <div class="table-wrap" *ngIf="columnas().length">
+      <table class="table">
+        <thead>
+          <tr>
+            <th *ngFor="let c of columnas()">{{ c }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of filas()">
+            <td *ngFor="let c of columnas()">{{ r[c] }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="loader" *ngIf="cargando()">Generando datos…</div>
+  </div>
+</div>

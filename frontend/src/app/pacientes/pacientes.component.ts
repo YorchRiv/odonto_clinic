@@ -48,7 +48,7 @@ export class PacientesComponent implements OnInit {
       direccion: '',
       estado: 'ACTIVO' as PacienteEstado,
       alergias: '',
-      fechaNacimiento: '', // yyyy-MM-dd
+      fechaNacimiento: '', // dd-MM-yyyy
       dpi: ''
     };
   }
