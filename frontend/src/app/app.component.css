@@ -1,3 +1,4 @@
+/* Estilo para el enlace activo en la barra de navegación */
 .nav-link.active {
  background-color: rgba(255, 255, 255, 0.25);
   border-left: 4px solid #fff;
@@ -5,4 +6,10 @@
   font-weight: bold;
 }
 
+
+/* Asegura que el wrapper tenga al menos el alto de la ventana */
+.app-shell { min-height: 100vh; }
+
+/* Deja que el sidebar crezca con el contenido (reemplaza vh-100) */
+#sidebar { height: auto; }
 

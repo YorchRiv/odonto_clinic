@@ -20,10 +20,7 @@
         >
           <strong>Dra. Ana Maria Polo</strong>
         </a>
-        <ul
-          class="dropdown-menu dropdown-menu-end"
-          aria-labelledby="dropdownUser"
-        >
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownUser">
           <li><a class="dropdown-item" href="#">Perfil</a></li>
           <li><a class="dropdown-item" href="#">Configuración</a></li>
           <li><hr class="dropdown-divider" /></li>
@@ -34,54 +31,66 @@
   </div>
 </nav>
 
-<!-- Sidebar -->
-<div class="d-flex">
-  <nav id="sidebar" class="col-md-2 d-md-block sidebar vh-100">
+<!-- Layout principal -->
+<div class="d-flex app-shell">
+  <!-- Sidebar -->
+  <nav id="sidebar" class="col-md-2 d-md-block sidebar">
     <ul class="nav flex-column">
       <li class="nav-item mb-1">
         <a class="nav-link text-white d-flex align-items-center gap-2"
            routerLink="/dashboard"
-           routerLinkActive="active"> <!-- Agrega la clase 'active' cuando la ruta esté activa -->
+           routerLinkActive="active"
+        >
           <i class="fa-solid fa-chart-line"></i>
           <span class="text-nowrap">Dashboard</span>
         </a>
       </li>
+
       <li class="nav-item mb-1">
         <a class="nav-link text-white d-flex align-items-center gap-2"
            routerLink="/agenda"
-           routerLinkActive="active">
+           routerLinkActive="active"
+        >
           <i class="fa-solid fa-calendar-check"></i>
           <span class="text-nowrap">Agenda</span>
         </a>
       </li>
+
       <li class="nav-item mb-1">
         <a class="nav-link text-white d-flex align-items-center gap-2"
            routerLink="/pacientes"
-           routerLinkActive="active">
+           routerLinkActive="active"
+        >
           <i class="fa-solid fa-users"></i>
           <span class="text-nowrap">Pacientes</span>
         </a>
       </li>
+
       <li class="nav-item mb-1">
         <a class="nav-link text-white d-flex align-items-center gap-2"
            routerLink="/historia-clinica"
-           routerLinkActive="active">
+           routerLinkActive="active"
+        >
           <i class="fa-solid fa-notes-medical"></i>
           <span class="text-nowrap">Historia Clínica</span>
         </a>
       </li>
+
       <li class="nav-item mb-1">
         <a class="nav-link text-white d-flex align-items-center gap-2"
            routerLink="/reportes"
-           routerLinkActive="active">
+           routerLinkActive="active"
+        >
           <i class="fa-solid fa-chart-pie"></i>
           <span class="text-nowrap">Reportes</span>
         </a>
       </li>
+
       <li class="nav-item mb-1">
         <a class="nav-link text-white d-flex align-items-center gap-2"
            routerLink="/configuracion"
-           routerLinkActive="active">
+           routerLinkActive="active"
+        >
           <i class="fa-solid fa-gear"></i>
           <span class="text-nowrap">Configuración</span>
         </a>
