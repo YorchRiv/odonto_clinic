@@ -31,7 +31,7 @@ export class PacientesService {
   private http = inject(HttpClient);
   
   // Cambia a false cuando conectes el backend.
-  private readonly useMock = true;
+  private readonly useMock = false;
   private readonly baseUrl = 'http://localhost:3000';
   private readonly STORAGE_KEY = 'dentalpro_pacientes_v1';
 
