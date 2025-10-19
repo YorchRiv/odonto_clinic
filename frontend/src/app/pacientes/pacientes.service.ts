@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, throwError, delay } from 'rxjs';
+import { Observable, of, throwError, delay, map } from 'rxjs';
 
 export type PacienteEstado = 'ACTIVO' | 'INACTIVO';
 
@@ -13,31 +13,76 @@ export interface Paciente {
   direccion?: string | null;
   estado: PacienteEstado;
   alergias?: string | null;
-  fechaNacimiento?: string | null; // 'dd-MM-yyyy'
+  /** UI: 'dd-MM-yyyy' */
+  fechaNacimiento?: string | null;
   dpi?: string | null;
-  
+
   createdAt?: string; // ISO
   updatedAt?: string; // ISO
 }
 
-export type PacienteCreate = Omit<Paciente, 'id'|'estado'|'createdAt'|'updatedAt'|'ultimaVisita'> & {
-  estado?: PacienteEstado;
-};
+export type PacienteCreate = Omit<Paciente, 'id'|'createdAt'|'updatedAt'>;
 
 @Injectable({
   providedIn: 'root'
 })
 export class PacientesService {
   private http = inject(HttpClient);
-  
-  // Cambia a false cuando conectes el backend.
-  private readonly useMock = false;
+
+  private readonly useMock = false; // <- deja en false porque ya conectaste backend
   private readonly baseUrl = 'http://localhost:3000';
   private readonly STORAGE_KEY = 'dentalpro_pacientes_v1';
 
-  // =============== API Pública (misma forma que usaría backend) ===============
+  /** ⬇️ Mientras no hay login/JWT, usa el usuario creado por Postman */
+  private readonly CREATOR_ID = 1;
+
+  // ================= Helpers (mapeo FE -> BE) =================
+  /** 'dd-MM-yyyy' o 'dd/MM/yyyy' -> ISO; si ya es ISO, lo deja igual */
+  private toISO(d?: string | null): string | null {
+    if (!d) return null;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(d)) return d; // ya viene ISO
+    const [dd, mm, yyyy] = d.replaceAll('/', '-').split('-');
+    if (dd && mm && yyyy) return new Date(+yyyy, +mm - 1, +dd).toISOString();
+    const t = Date.parse(d);
+    return isNaN(t) ? null : new Date(t).toISOString();
+  }
+
+  /** 'Activo'/'INACTIVO' -> 'ACTIVO'|'INACTIVO' */
+  private normEstado(e?: string | null): PacienteEstado {
+    const v = (e ?? '').toString().trim().toUpperCase();
+    return v === 'INACTIVO' ? 'INACTIVO' : 'ACTIVO';
+  }
+
+  /** Elimina keys con undefined para PATCH limpio */
+  private pruneUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
+    const out: any = {};
+    Object.keys(obj).forEach(k => {
+      if (typeof obj[k] !== 'undefined') out[k] = obj[k];
+    });
+    return out;
+  }
+
+  /** Construye payload para el backend desde el modelo del FE */
+  private mapToApi(p: Partial<Paciente>) {
+    const body = {
+      nombre: p.nombres?.trim(),
+      apellido: p.apellidos?.trim(),
+      identificacion: p.dpi?.trim(),
+      telefono: (p.telefono ?? '').toString().trim(),
+      email: p.email?.trim() ?? null,
+      direccion: p.direccion?.trim() ?? null,
+      fechaNacimiento: this.toISO(p.fechaNacimiento ?? null),
+      estado: this.normEstado(p.estado),
+      alergias: p.alergias?.trim() ?? null,
+      creadoPorId: this.CREATOR_ID,
+    };
+    return this.pruneUndefined(body);
+  }
+
+  // =============== API Pública (con backend real) ===============
   list(): Observable<Paciente[]> {
     if (this.useMock) return this.mock_list().pipe(delay(80));
+    // El backend ya devuelve en forma FE (transformPaciente), así que retorno tal cual
     return this.http.get<Paciente[]>(`${this.baseUrl}/pacientes`);
   }
 
@@ -48,17 +93,22 @@ export class PacientesService {
 
   create(payload: PacienteCreate): Observable<Paciente> {
     if (this.useMock) return this.mock_create(payload).pipe(delay(120));
-    return this.http.post<Paciente>(`${this.baseUrl}/pacientes`, payload);
+    const body = this.mapToApi(payload);
+    return this.http.post<Paciente>(`${this.baseUrl}/pacientes`, body);
   }
 
   update(id: string, changes: Partial<Paciente>): Observable<Paciente> {
     if (this.useMock) return this.mock_update(id, changes).pipe(delay(120));
-    return this.http.patch<Paciente>(`${this.baseUrl}/pacientes/${id}`, changes);
+    const body = this.mapToApi(changes);
+    // Tu backend expone PATCH (no PUT)
+    return this.http.patch<Paciente>(`${this.baseUrl}/pacientes/${id}`, body);
   }
 
   delete(id: string): Observable<boolean> {
     if (this.useMock) return this.mock_delete(id).pipe(delay(80));
-    return this.http.delete<boolean>(`${this.baseUrl}/pacientes/${id}`);
+    return this.http.delete(`${this.baseUrl}/pacientes/${id}`, { observe: 'response' }).pipe(
+      map(res => res.ok)
+    );
   }
 
   clearMock(): void {
@@ -103,23 +153,18 @@ export class PacientesService {
   private validateNombreApellidoUnique(all: Paciente[], nombres: string, apellidos: string, ignoreId?: string) {
     const nomNorm = this.norm(nombres);
     const apeNorm = this.norm(apellidos);
-    
     if (!nomNorm || !apeNorm) return;
-    
-    const exists = all.some(p => 
-      this.norm(p.nombres) === nomNorm && 
+    const exists = all.some(p =>
+      this.norm(p.nombres) === nomNorm &&
       this.norm(p.apellidos) === apeNorm &&
       (!ignoreId || p.id !== ignoreId)
     );
-    
     if (exists) throw new Error('PACIENTE_DUPLICADO');
-  }
+    }
 
   private mock_create(payload: PacienteCreate): Observable<Paciente> {
     try {
       const all = this.readStore();
-      
-      // Validar que no exista paciente con mismo nombre y apellido
       this.validateNombreApellidoUnique(all, payload.nombres, payload.apellidos);
 
       const nowISO = new Date().toISOString();
@@ -155,7 +200,6 @@ export class PacientesService {
       // Validar nombre y apellido único si se pretende cambiar
       const nombres = typeof changes.nombres !== 'undefined' ? changes.nombres : all[idx].nombres;
       const apellidos = typeof changes.apellidos !== 'undefined' ? changes.apellidos : all[idx].apellidos;
-      
       this.validateNombreApellidoUnique(all, nombres, apellidos, id);
 
       const updated: Paciente = {
