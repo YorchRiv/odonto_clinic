@@ -1,8 +1,7 @@
 /* Estilos globales para la aplicación */
 /* Gradiente compartido para navbar y sidebar */
-.navbar-gradient,
-#sidebar {
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+.navbar-gradient, #sidebar {
+  background: linear-gradient(90deg, #7a4fe0, #7a4fe0 60%, #6366f1);
   color: white;
 }
 
