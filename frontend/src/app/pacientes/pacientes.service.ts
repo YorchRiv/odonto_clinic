@@ -30,7 +30,8 @@ export class PacientesService {
   private http = inject(HttpClient);
 
   private readonly useMock = false; // <- deja en false porque ya conectaste backend
-  private readonly baseUrl = 'http://localhost:3000';
+  //private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
   private readonly STORAGE_KEY = 'dentalpro_pacientes_v1';
 
   /** ⬇️ Mientras no hay login/JWT, usa el usuario creado por Postman */
