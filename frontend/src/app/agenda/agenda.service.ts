@@ -1,7 +1,8 @@
 // src/app/agenda/agenda.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, forkJoin, map, switchMap, catchError } from 'rxjs';
+import { Observable, of, forkJoin } from 'rxjs';
+import { map, switchMap, catchError } from 'rxjs/operators';
 
 /** ===== Tipos de la Agenda (mismos que tu UI) ===== */
 export type CitaStatus =
@@ -67,8 +68,7 @@ export class AgendaService {
     id: String(row?.id ?? ''),
     hora: this.normHora(row?.hora),
     pacienteId: row?.pacienteId != null ? String(row.pacienteId) : undefined,
-    // si el backend ya trae texto, lo usamos; si no, lo completamos luego
-    paciente: row?.pacienteNombre ?? undefined,
+    paciente: row?.pacienteNombre ?? undefined, // si el backend lo enviara
     motivo: row?.motivo ?? undefined,
     status: row?.estado as CitaStatus,
     notas: row?.notas ?? undefined,
@@ -83,6 +83,7 @@ export class AgendaService {
 
   /** Obtiene nombre del paciente por id; maneja errores devolviendo undefined */
   private fetchPacienteNombre(id: string): Observable<string | undefined> {
+    if (!id) return of(undefined);
     return this.http.get<PacienteRow>(`${this.baseUrl}/pacientes/${id}`).pipe(
       map(p =>
         (p?.nombre && p.nombre.trim()) ||
@@ -183,27 +184,40 @@ export class AgendaService {
     );
   }
 
-  /** PATCH /citas/:id  (editar hora/motivo/notas y/o mover de día enviando 'fecha') */
+  /**
+   * PATCH /citas/:id  (editar hora/motivo/notas y/o mover de día y/o cambiar paciente)
+   * IMPORTANTE:
+   * - Ahora SIEMPRE mandamos 'fecha' Y 'hora' para evitar que la BD conserve la hora vieja.
+   * - Si el usuario selecciona otro paciente, enviamos pacienteId (number).
+   */
   actualizarCita(
     id: string,
     fechaISO: string,
-    payload: Partial<Pick<CitaItem, 'hora'|'paciente'|'motivo'|'notas'>>
+    payload: Partial<Pick<CitaItem, 'hora'|'paciente'|'motivo'|'notas'>> & { pacienteId?: string }
   ): Observable<CitaItem> {
-    const patch: any = {};
-    if (payload.hora)   patch.hora   = this.normHora(payload.hora);
+    const horaFinal = this.normHora(payload.hora ?? '');
+    const patch: any = {
+      // siempre mandamos estos dos:
+      fecha: this.toBackendDate(fechaISO, horaFinal || payload.hora),
+      hora: horaFinal || this.normHora(payload.hora),
+    };
+
     if (payload.motivo !== undefined) patch.motivo = payload.motivo;
     if (payload.notas  !== undefined) patch.notas  = payload.notas;
-    if (fechaISO) patch.fecha = this.toBackendDate(fechaISO, patch.hora);
+    if (payload.pacienteId)           patch.pacienteId = Number(payload.pacienteId);
 
     return this.http.patch<any>(`${this.baseUrl}/citas/${id}`, patch).pipe(
       map(this.mapRowToItem),
-      switchMap(item =>
-        item.paciente
-          ? of(item)
-          : this.fetchPacienteNombre(item?.pacienteId ?? '').pipe(
+      switchMap(item => {
+        // Si cambiamos de paciente o no viene nombre, lo traemos
+        const debeCargarNombre =
+          !!payload.pacienteId || !item.paciente;
+        return debeCargarNombre
+          ? this.fetchPacienteNombre(item?.pacienteId ?? '').pipe(
               map(name => ({ ...item, paciente: name }))
             )
-      )
+          : of(item);
+      })
     );
   }
 
