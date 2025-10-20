@@ -174,7 +174,7 @@
                 <div class="avatar-large">{{ initials(paciente) }}</div>
                 <div>
                   <h6 class="mb-0 text-truncate">{{ paciente.nombres }} {{ paciente.apellidos }}</h6>
-                  <small class="text-muted">ID: {{ paciente.id.slice(0, 8) }}</small>
+                  <small class="text-muted">ID: {{ ('' + paciente.id).slice(0, 8) }}</small>
                 </div>
               </div>
 
