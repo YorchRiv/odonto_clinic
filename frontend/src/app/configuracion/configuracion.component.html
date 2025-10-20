@@ -1,1 +1,146 @@
-<p>configuracion works!</p>
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="title">Usuarios</h1>
+      <p class="subtitle">Crea usuarios y asigna roles</p>
+    </div>
+
+    <button class="btn btn-primary btn-new" (click)="openCrear()">
+      <i class="fa-solid fa-user-plus me-2"></i> Nuevo usuario
+    </button>
+  </div>
+
+  <!-- Barra: buscador + filtro de rol -->
+  <div class="toolbar d-flex gap-3 mb-3">
+    <div class="flex-grow-1">
+      <div class="input-group">
+        <span class="input-group-text bg-white">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </span>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Buscar por nombre, correo o rol…"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+        />
+      </div>
+    </div>
+
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+        {{ filtroRol() === 'TODOS' ? 'Todos los roles' : filtroRol() }}
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><button class="dropdown-item" [class.active]="filtroRol() === 'TODOS'" (click)="setFiltroRol('TODOS')">Todos</button></li>
+        <li><button class="dropdown-item" [class.active]="filtroRol() === 'ADMIN'" (click)="setFiltroRol('ADMIN')">ADMIN</button></li>
+        <li><button class="dropdown-item" [class.active]="filtroRol() === 'DOCTOR'" (click)="setFiltroRol('DOCTOR')">DOCTOR</button></li>
+        <li><button class="dropdown-item" [class.active]="filtroRol() === 'RECEPCIONISTA'" (click)="setFiltroRol('RECEPCIONISTA')">RECEPCIONISTA</button></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <table class="table align-middle mb-0">
+    <thead class="table-light">
+      <tr>
+        <th style="width: 40%">Usuario</th>
+        <th style="width: 30%">Correo</th>
+        <th style="width: 15%">Rol</th>
+        <th style="width: 15%">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let u of listaFiltrada(); trackBy: trackById">
+        <td>
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar">{{ initials(u) }}</div>
+            <div>
+              <div class="fw-semibold">{{ u.nombre }} {{ u.apellido }}</div>
+              <div class="text-muted small" *ngIf="u.creadoEn">Creado: {{ u.creadoEn | date:'dd/MM/yyyy' }}</div>
+            </div>
+          </div>
+        </td>
+        <td>{{ u.email }}</td>
+        <td><span [class]="rolClass(u)">{{ u.rol }}</span></td>
+        <td>
+          <div class="d-flex gap-2">
+            <button class="icon-btn" title="Editar" (click)="openEditar(u)">
+              <i class="fa-regular fa-pen-to-square"></i>
+            </button>
+            <button class="icon-btn text-danger" title="Eliminar" (click)="eliminar(u)">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      <tr *ngIf="!listaFiltrada().length">
+        <td colspan="4" class="text-center text-muted py-4">Sin usuarios.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- =================== MODAL CREAR/EDITAR =================== -->
+  <div class="modal fade" tabindex="-1" #usrModal>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form #f="ngForm" (ngSubmit)="submit(f)">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              {{ editandoId ? "Editar usuario" : "Nuevo usuario" }}
+            </h5>
+            <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Nombre *</label>
+                <input class="form-control" name="nombre" [(ngModel)]="form.nombre" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Apellido *</label>
+                <input class="form-control" name="apellido" [(ngModel)]="form.apellido" required />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Correo *</label>
+                <input type="email" class="form-control" name="email" [(ngModel)]="form.email" required />
+              </div>
+
+              <div class="col-12" *ngIf="!editandoId">
+                <label class="form-label">Contraseña *</label>
+                <input type="password" class="form-control" name="password" [(ngModel)]="form.password" required minlength="6" />
+                <div class="form-text">Mínimo 6 caracteres.</div>
+              </div>
+
+              <div class="col-12" *ngIf="editandoId">
+                <label class="form-label">Cambiar contraseña (opcional)</label>
+                <input type="password" class="form-control" name="password" [(ngModel)]="form.password" minlength="6" />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Rol *</label>
+                <select class="form-select" name="rol" [(ngModel)]="form.rol" required>
+                  <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="text-danger small mt-2" *ngIf="formError()">
+              {{ formError() }}
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando()">
+              {{ creando() ? "Guardando…" : (editandoId ? "Guardar cambios" : "Crear usuario") }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

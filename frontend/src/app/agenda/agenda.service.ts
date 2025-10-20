@@ -33,7 +33,7 @@ export class AgendaService {
 
   /** Cuando conectes backend: ajusta baseUrl y pon useMock=false */
   private readonly baseUrl = 'http://localhost:3000';
-  private readonly useMock = true;
+  private readonly useMock = false;
 
   /** Clave de almacenamiento local para el mock */
   private readonly STORAGE_KEY = 'dentalpro_agenda_v1';
