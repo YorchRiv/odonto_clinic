@@ -6,7 +6,7 @@ async function bootstrap() {
   
   // Habilitar CORS
   app.enableCors({
-    origin: 'http://localhost:4200', // Tu frontend Angular
+    origin: 'https://odonto-clinic.onrender.com', // Tu frontend Angular
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
