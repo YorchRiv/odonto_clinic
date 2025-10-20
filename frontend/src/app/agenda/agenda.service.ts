@@ -79,31 +79,64 @@ export class AgendaService {
     return [...items].sort((a, b) => a.hora.localeCompare(b.hora));
   }
 
-  // ====== Enriquecer con nombres de pacientes SIN tocar backend ======
+  // ====== Utilidades para nombres de pacientes SIN tocar backend ======
 
-  /** Obtiene nombre del paciente por id; maneja errores devolviendo undefined */
+  private fullName(p: PacienteRow | undefined): string | undefined {
+    if (!p) return undefined;
+    const direct = (p.nombre ?? '').trim();
+    if (direct) return direct;
+    const fn = [p.nombres, p.apellidos].filter(Boolean).join(' ').trim();
+    return fn || undefined;
+  }
+
+  private normalizeName(s: string | undefined): string {
+    return (s ?? '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita acentos
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** GET /pacientes/:id -> nombre */
   private fetchPacienteNombre(id: string): Observable<string | undefined> {
     if (!id) return of(undefined);
     return this.http.get<PacienteRow>(`${this.baseUrl}/pacientes/${id}`).pipe(
-      map(p =>
-        (p?.nombre && p.nombre.trim()) ||
-        [p?.nombres, p?.apellidos].filter(Boolean).join(' ').trim() ||
-        undefined
-      ),
+      map(p => this.fullName(p)),
       catchError(() => of(undefined))
     );
   }
 
-  /** Dado un arreglo, trae nombres faltantes (1 request por id único) */
+  /** GET /pacientes -> lista */
+  private fetchPacientes(): Observable<PacienteRow[]> {
+    return this.http.get<PacienteRow[]>(`${this.baseUrl}/pacientes`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  /**
+   * Resuelve pacienteId:
+   * 1) Si ya viene pacienteId => lo usamos.
+   * 2) Si viene 'paciente' (texto) => buscamos en /pacientes el primero que haga match por nombre.
+   * 3) Si no encontramos, devolvemos undefined (no cambia el paciente).
+   */
+  private resolvePacienteId(payload: { pacienteId?: string; paciente?: string }): Observable<number | undefined> {
+    if (payload.pacienteId) return of(Number(payload.pacienteId));
+    const typed = this.normalizeName(payload.paciente);
+    if (!typed) return of(undefined);
+
+    return this.fetchPacientes().pipe(
+      map(list => {
+        const match = list.find(p => this.normalizeName(this.fullName(p)) === typed);
+        return match?.id != null ? Number(match.id) : undefined;
+      })
+    );
+  }
+
+  /** Enriquecer arreglo con nombres (1 request por id único) */
   private enrichWithPacientes(items: CitaItem[]): Observable<CitaItem[]> {
     const ids = Array.from(
-      new Set(
-        items
-          .filter(it => it.paciente == null && it.pacienteId)
-          .map(it => it.pacienteId!) // non-null
-      )
+      new Set(items.filter(it => !it.paciente && it.pacienteId).map(it => it.pacienteId!))
     );
-
     if (ids.length === 0) return of(items);
 
     const calls = ids.map(id =>
@@ -114,9 +147,7 @@ export class AgendaService {
       map(pairs => {
         const dict = new Map<string, string | undefined>(pairs);
         return items.map(it =>
-          it.paciente || !it.pacienteId
-            ? it
-            : { ...it, paciente: dict.get(it.pacienteId!) }
+          it.paciente || !it.pacienteId ? it : { ...it, paciente: dict.get(it.pacienteId!) }
         );
       })
     );
@@ -185,10 +216,9 @@ export class AgendaService {
   }
 
   /**
-   * PATCH /citas/:id  (editar hora/motivo/notas y/o mover de día y/o cambiar paciente)
-   * IMPORTANTE:
-   * - Ahora SIEMPRE mandamos 'fecha' Y 'hora' para evitar que la BD conserve la hora vieja.
-   * - Si el usuario selecciona otro paciente, enviamos pacienteId (number).
+   * PATCH /citas/:id  (editar hora/motivo/notas y/o mover de día y/o CAMBIAR PACIENTE)
+   * - Siempre mandamos 'fecha' Y 'hora' para evitar que la BD conserve la hora vieja.
+   * - Si el usuario escribe otro paciente por texto, buscamos su id y lo enviamos.
    */
   actualizarCita(
     id: string,
@@ -196,28 +226,25 @@ export class AgendaService {
     payload: Partial<Pick<CitaItem, 'hora'|'paciente'|'motivo'|'notas'>> & { pacienteId?: string }
   ): Observable<CitaItem> {
     const horaFinal = this.normHora(payload.hora ?? '');
-    const patch: any = {
-      // siempre mandamos estos dos:
-      fecha: this.toBackendDate(fechaISO, horaFinal || payload.hora),
-      hora: horaFinal || this.normHora(payload.hora),
-    };
 
-    if (payload.motivo !== undefined) patch.motivo = payload.motivo;
-    if (payload.notas  !== undefined) patch.notas  = payload.notas;
-    if (payload.pacienteId)           patch.pacienteId = Number(payload.pacienteId);
+    return this.resolvePacienteId({ pacienteId: payload.pacienteId, paciente: payload.paciente }).pipe(
+      switchMap(resolvedPacienteId => {
+        const patch: any = {
+          fecha: this.toBackendDate(fechaISO, horaFinal || payload.hora),
+          hora: horaFinal || this.normHora(payload.hora),
+        };
+        if (payload.motivo !== undefined) patch.motivo = payload.motivo;
+        if (payload.notas  !== undefined) patch.notas  = payload.notas;
+        if (resolvedPacienteId != null)   patch.pacienteId = resolvedPacienteId;
 
-    return this.http.patch<any>(`${this.baseUrl}/citas/${id}`, patch).pipe(
+        return this.http.patch<any>(`${this.baseUrl}/citas/${id}`, patch);
+      }),
       map(this.mapRowToItem),
-      switchMap(item => {
-        // Si cambiamos de paciente o no viene nombre, lo traemos
-        const debeCargarNombre =
-          !!payload.pacienteId || !item.paciente;
-        return debeCargarNombre
-          ? this.fetchPacienteNombre(item?.pacienteId ?? '').pipe(
-              map(name => ({ ...item, paciente: name }))
-            )
-          : of(item);
-      })
+      switchMap(item =>
+        this.fetchPacienteNombre(item?.pacienteId ?? '').pipe(
+          map(name => ({ ...item, paciente: name }))
+        )
+      )
     );
   }
 
