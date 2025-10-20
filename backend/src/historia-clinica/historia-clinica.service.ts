@@ -9,41 +9,25 @@ export class HistoriaClinicaService {
 
   create(createHistoriaClinicaDto: CreateHistoriaClinicaDto) {
     return this.prisma.historiaClinica.create({
-      data: createHistoriaClinicaDto,
-      include: {
-        cita: true,
-        paciente: true,
-      },
+      data: createHistoriaClinicaDto,      
     });
   }
 
   findAll() {
-    return this.prisma.historiaClinica.findMany({
-      include: {
-        cita: true,
-        paciente: true,
-      },
+    return this.prisma.historiaClinica.findMany({      
     });
   }
 
   findOne(id: number) {
     return this.prisma.historiaClinica.findUnique({
-      where: { id },
-      include: {
-        cita: true,
-        paciente: true,
-      },
+      where: { id },      
     });
   }
 
   update(id: number, updateHistoriaClinicaDto: UpdateHistoriaClinicaDto) {
     return this.prisma.historiaClinica.update({
       where: { id },
-      data: updateHistoriaClinicaDto,
-      include: {
-        cita: true,
-        paciente: true,
-      },
+      data: updateHistoriaClinicaDto,      
     });
   }
 
