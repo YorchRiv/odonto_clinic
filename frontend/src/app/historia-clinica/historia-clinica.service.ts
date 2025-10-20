@@ -18,7 +18,7 @@ export class HistoriaClinicaService {
   private http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:3000';
 
-  // ===== Helpers =====
+  // ===== Helpers de fecha / orden =====
   private toISO_ddMMyyyy(d: Date): string {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -39,24 +39,46 @@ export class HistoriaClinicaService {
   }
   private isNumericId(v: string) { return /^\d+$/.test((v ?? '').trim()); }
 
+  // ===== Mapeo Paciente (normaliza campos del backend) =====
+  private mapPaciente = (row: any): Paciente => {
+    // Tomamos el nombre del backend (creadoEn/actualizadoEn) si no vienen como createdAt/updatedAt
+    const createdAt = row?.createdAt ?? row?.creadoEn ?? row?.creado_at ?? null;
+    const updatedAt = row?.updatedAt ?? row?.actualizadoEn ?? row?.updated_at ?? null;
+
+    return {
+      id: String(row?.id ?? ''),
+      nombres: row?.nombres ?? '',
+      apellidos: row?.apellidos ?? '',
+      telefono: row?.telefono ?? '',
+      email: row?.email ?? null,
+      direccion: row?.direccion ?? null,
+      estado: (row?.estado ?? 'ACTIVO').toString().toUpperCase() === 'INACTIVO' ? 'INACTIVO' : 'ACTIVO',
+      alergias: row?.alergias ?? null,
+      // Si el backend trae fechaNacimiento ISO, la dejamos tal cual; si viniera dd-MM-yyyy también lo aceptamos
+      fechaNacimiento: row?.fechaNacimiento ?? null,
+      dpi: row?.dpi ?? null,
+      createdAt: createdAt ?? undefined,
+      updatedAt: updatedAt ?? undefined,
+    };
+  };
+
   /** Acepta number|string. Si no es numérico (mock), lo resuelve buscando en /pacientes */
   private resolvePacienteId(pacienteIdOrQuery: number | string): Observable<number> {
-    // 👇 la línea que arregla el bug: forzamos a string ANTES de trim()
     const raw = String(pacienteIdOrQuery ?? '').trim();
 
     if (this.isNumericId(raw)) return of(Number(raw));
 
     // Intento 1: backend con ?search=
-    return this.http.get<Paciente[]>(`${this.baseUrl}/pacientes`, { params: { search: raw } }).pipe(
+    return this.http.get<any[]>(`${this.baseUrl}/pacientes`, { params: { search: raw } }).pipe(
       switchMap(list => {
         const hit = Array.isArray(list) && list.length ? list[0] : null;
         if (hit?.id != null && /^\d+$/.test(String(hit.id))) return of(Number(hit.id));
 
         // Fallback: traer todos y filtrar localmente
-        return this.http.get<Paciente[]>(`${this.baseUrl}/pacientes`).pipe(
+        return this.http.get<any[]>(`${this.baseUrl}/pacientes`).pipe(
           map(all => {
             const q = raw.toLowerCase();
-            const h = (all ?? []).find(p =>
+            const h = (all ?? []).find((p: any) =>
               `${p.nombres} ${p.apellidos}`.toLowerCase().includes(q) ||
               (p.dpi ?? '').toLowerCase().includes(q) ||
               (p.telefono ?? '').toLowerCase().includes(q) ||
@@ -75,7 +97,9 @@ export class HistoriaClinicaService {
   getHistoriaClinica(pacienteId: number | string): Observable<HistoriaClinica> {
     return this.resolvePacienteId(pacienteId).pipe(
       switchMap(idNum => {
-        const paciente$ = this.http.get<Paciente>(`${this.baseUrl}/pacientes/${idNum}`);
+        const paciente$ = this.http
+          .get<any>(`${this.baseUrl}/pacientes/${idNum}`)
+          .pipe(map(this.mapPaciente));
 
         const citas$ = this.http
           .get<any[]>(`${this.baseUrl}/citas`, { params: { pacienteId: String(idNum) } })
@@ -121,22 +145,29 @@ export class HistoriaClinicaService {
     );
   }
 
-  /** Busca pacientes (usa ?search y si no, filtra localmente) */
+  /** Busca pacientes (usa ?search y si no, filtra localmente) — mapeando fechas */
   buscarPacientes(query: string): Observable<Paciente[]> {
     const q = (query ?? '').trim();
     if (!q) return of([]);
-    return this.http.get<Paciente[]>(`${this.baseUrl}/pacientes`, { params: { search: q } }).pipe(
+
+    return this.http.get<any[]>(`${this.baseUrl}/pacientes`, { params: { search: q } }).pipe(
       switchMap(list => {
-        if (Array.isArray(list) && list.length) return of(list);
-        return this.http.get<Paciente[]>(`${this.baseUrl}/pacientes`).pipe(
+        if (Array.isArray(list) && list.length) {
+          return of(list.map(this.mapPaciente));
+        }
+        // Fallback: traer todos y filtrar local
+        return this.http.get<any[]>(`${this.baseUrl}/pacientes`).pipe(
           map(all => {
             const ql = q.toLowerCase();
-            return (all ?? []).filter(p =>
-              `${p.nombres} ${p.apellidos}`.toLowerCase().includes(ql) ||
-              (p.telefono ?? '').toLowerCase().includes(ql) ||
-              (p.email ?? '').toLowerCase().includes(ql) ||
-              (p.dpi ?? '').toLowerCase().includes(ql)
-            ).slice(0, 20);
+            return (all ?? [])
+              .filter((p: any) =>
+                `${p.nombres} ${p.apellidos}`.toLowerCase().includes(ql) ||
+                (p.telefono ?? '').toLowerCase().includes(ql) ||
+                (p.email ?? '').toLowerCase().includes(ql) ||
+                (p.dpi ?? '').toLowerCase().includes(ql)
+              )
+              .slice(0, 20)
+              .map(this.mapPaciente);
           })
         );
       }),

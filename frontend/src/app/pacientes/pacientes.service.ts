@@ -47,6 +47,17 @@ export class PacientesService {
     return isNaN(t) ? null : new Date(t).toISOString();
   }
 
+  /** ISO -> 'dd-MM-yyyy' (para mostrar si lo quieres así en UI) */
+  private toDDMMYYYY(iso?: string | null): string | null {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  }
+
   /** 'Activo'/'INACTIVO' -> 'ACTIVO'|'INACTIVO' */
   private normEstado(e?: string | null): PacienteEstado {
     const v = (e ?? '').toString().trim().toUpperCase();
@@ -61,6 +72,27 @@ export class PacientesService {
     });
     return out;
   }
+
+  /** transforma la fila del backend -> modelo del Front */
+  private transformPacienteRow = (r: any): Paciente => ({
+    id: String(r?.id ?? ''),
+    nombres: r?.nombres ?? '',
+    apellidos: r?.apellidos ?? '',
+    telefono: r?.telefono ?? '',
+    email: r?.email ?? null,
+    direccion: r?.direccion ?? null,
+    estado: this.normEstado(r?.estado),
+    alergias: r?.alergias ?? null,
+
+    // Si el backend manda fechaNacimiento como timestamp/ISO, lo transformamos a 'dd-MM-yyyy'
+    fechaNacimiento: r?.fechaNacimiento ? this.toDDMMYYYY(String(r.fechaNacimiento)) : null,
+
+    dpi: r?.dpi ?? null,
+
+    // FIX: backend usa creadoEn/actualizadoEn -> front usa createdAt/updatedAt
+    createdAt: r?.creadoEn ? String(r.creadoEn) : (r?.createdAt ? String(r.createdAt) : undefined),
+    updatedAt: r?.actualizadoEn ? String(r.actualizadoEn) : (r?.updatedAt ? String(r.updatedAt) : undefined),
+  });
 
   /** Construye payload para el backend desde el modelo del FE */
   private mapToApi(p: Partial<Paciente>) {
@@ -82,13 +114,16 @@ export class PacientesService {
   // =============== API Pública (con backend real) ===============
   list(): Observable<Paciente[]> {
     if (this.useMock) return this.mock_list().pipe(delay(80));
-    // El backend ya devuelve en forma FE (transformPaciente), así que retorno tal cual
-    return this.http.get<Paciente[]>(`${this.baseUrl}/pacientes`);
+    return this.http.get<any[]>(`${this.baseUrl}/pacientes`).pipe(
+      map(rows => (rows ?? []).map(this.transformPacienteRow))
+    );
   }
 
   getById(id: string): Observable<Paciente | null> {
     if (this.useMock) return this.mock_getById(id).pipe(delay(60));
-    return this.http.get<Paciente>(`${this.baseUrl}/pacientes/${id}`);
+    return this.http.get<any>(`${this.baseUrl}/pacientes/${id}`).pipe(
+      map(row => (row ? this.transformPacienteRow(row) : null))
+    );
   }
 
   create(payload: PacienteCreate): Observable<Paciente> {
@@ -160,7 +195,7 @@ export class PacientesService {
       (!ignoreId || p.id !== ignoreId)
     );
     if (exists) throw new Error('PACIENTE_DUPLICADO');
-    }
+  }
 
   private mock_create(payload: PacienteCreate): Observable<Paciente> {
     try {
