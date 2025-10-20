@@ -10,32 +10,16 @@ export class CitasService {
   create(createCitaDto: CreateCitaDto) {
     return this.prisma.cita.create({
       data: createCitaDto,
-      include: {
-        paciente: true,
-        usuario: true,
-        historia: true,
-      },
     });
   }
 
   findAll() {
-    return this.prisma.cita.findMany({
-      include: {
-        paciente: true,
-        usuario: true,
-        historia: true,
-      },
-    });
+    return this.prisma.cita.findMany();
   }
 
   findOne(id: number) {
     return this.prisma.cita.findUnique({
       where: { id },
-      include: {
-        paciente: true,
-        usuario: true,
-        historia: true,
-      },
     });
   }
 
@@ -43,11 +27,6 @@ export class CitasService {
     return this.prisma.cita.update({
       where: { id },
       data: updateCitaDto,
-      include: {
-        paciente: true,
-        usuario: true,
-        historia: true,
-      },
     });
   }
 
