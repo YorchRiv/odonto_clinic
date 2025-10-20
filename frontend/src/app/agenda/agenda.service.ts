@@ -1,8 +1,9 @@
+// src/app/agenda/agenda.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, throwError, delay } from 'rxjs';
+import { Observable, of, forkJoin, map, switchMap, catchError } from 'rxjs';
 
-/** ===== Tipos de la Agenda ===== */
+/** ===== Tipos de la Agenda (mismos que tu UI) ===== */
 export type CitaStatus =
   | 'CONFIRMADA'
   | 'PENDIENTE'
@@ -12,10 +13,10 @@ export type CitaStatus =
   | 'DISPONIBLE';
 
 export interface CitaItem {
-  id: string;
+  id: string;            // UI usa string; backend trae number
   hora: string;          // 'HH:MM' (24h)
-  pacienteId?: string;   // <-- agregado para enlazar con paciente real
-  paciente?: string;
+  pacienteId?: string;   // id numérico -> string para UI
+  paciente?: string;     // nombre para mostrar
   motivo?: string;
   status: CitaStatus;
   notas?: string;
@@ -27,231 +28,190 @@ export interface AgendaDia {
   items: CitaItem[];
 }
 
+type PacienteRow = {
+  id?: number | string;
+  nombres?: string;
+  apellidos?: string;
+  nombre?: string; // por si tu API ya devuelve nombre completo
+};
+
 @Injectable({ providedIn: 'root' })
 export class AgendaService {
   private http = inject(HttpClient);
-
-  /** Cuando conectes backend: ajusta baseUrl y pon useMock=false */
   private readonly baseUrl = 'http://localhost:3000';
-  private readonly useMock = false;
 
-  /** Clave de almacenamiento local para el mock */
-  private readonly STORAGE_KEY = 'dentalpro_agenda_v1';
+  // ================== Helpers de fecha y mapeos ==================
 
-  // ================== API PÚBLICA (misma firma que el backend) ==================
-
-  /** GET /agenda?date=dd-MM-yyyy */
-  getAgendaDia(fechaISO: string): Observable<AgendaDia> {
-    if (this.useMock) return this.mock_getAgendaDia(fechaISO).pipe(delay(100));
-    return this.http.get<AgendaDia>(`${this.baseUrl}/agenda`, { params: { date: fechaISO } });
+  /** Convierte 'dd-MM-yyyy' + 'HH:MM' -> Date */
+  private toBackendDate(fechaISO: string, hora?: string): Date {
+    const [dd, mm, yyyy] = fechaISO.split('-').map(Number);
+    const [HH, MM] = (hora ?? '00:00').split(':').map(Number);
+    return new Date(yyyy, mm - 1, dd, HH || 0, MM || 0, 0, 0);
   }
 
-  /** POST /citas  (requiere paciente existente) */
-  crearCita(body: {
-    fechaISO: string;
-    hora: string;
-    pacienteId: string;      // id del paciente existente
-    pacienteNombre: string;  // texto a mostrar (UI)
-    motivo: string;
-    notas?: string;
-  }): Observable<CitaItem> {
-    if (this.useMock) return this.mock_crearCita(body).pipe(delay(120));
-    return this.http.post<CitaItem>(`${this.baseUrl}/citas`, body);
+  /** Date -> 'dd-MM-yyyy' */
+  private toISO_ddMMyyyy(d: Date): string {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
   }
 
-  /** PATCH /citas/:id/status */
-  actualizarEstado(id: string, status: CitaStatus, fechaISO: string): Observable<CitaItem> {
-    if (this.useMock) return this.mock_actualizarEstado(id, status, fechaISO).pipe(delay(90));
-    return this.http.patch<CitaItem>(`${this.baseUrl}/citas/${id}/status`, { status });
+  /** Normaliza 'HH:MM[:ss]' -> 'HH:MM' */
+  private normHora(h: string | null | undefined): string {
+    return (h ?? '').toString().slice(0, 5);
   }
 
-  /** PATCH /citas/:id  (editar hora/paciente/motivo/notas y permite CAMBIAR de día) */
-  actualizarCita(
-    id: string,
-    fechaISO: string,
-    payload: Partial<Pick<CitaItem, 'hora'|'paciente'|'motivo'|'notas'>>
-  ): Observable<CitaItem> {
-    if (this.useMock) return this.mock_actualizarCita(id, fechaISO, payload).pipe(delay(120));
-    // En backend real, PATCH /citas/:id aceptaría nueva fecha/hora y movería la cita.
-    return this.http.patch<CitaItem>(`${this.baseUrl}/citas/${id}`, payload);
-  }
-
-  /** DELETE /citas/:id */
-  eliminarCita(fechaISO: string, id: string): Observable<boolean> {
-    if (this.useMock) return this.mock_eliminarCita(fechaISO, id).pipe(delay(80));
-    return this.http.delete<boolean>(`${this.baseUrl}/citas/${id}`);
-  }
-
-  /** (Opcional) helper de desarrollo para limpiar el mock */
-  clearMock(): void { localStorage.removeItem(this.STORAGE_KEY); }
-
-  // ================== IMPLEMENTACIÓN MOCK (localStorage) ===================
-
-  /** Lee el mapa completo { [fecha dd-MM-yyyy]: CitaItem[] } */
-  private readStore(): Record<string, CitaItem[]> {
-    try { return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}'); }
-    catch { return {}; }
-  }
-  /** Guarda el mapa */
-  private writeStore(map: Record<string, CitaItem[]>) {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(map));
-  }
-
-  /** Normaliza 'HH:MM:ss' → 'HH:MM' */
-  private normHora(h: string): string { return (h ?? '').slice(0, 5); }
+  /** DB row -> CitaItem que espera tu UI */
+  private mapRowToItem = (row: any): CitaItem => ({
+    id: String(row?.id ?? ''),
+    hora: this.normHora(row?.hora),
+    pacienteId: row?.pacienteId != null ? String(row.pacienteId) : undefined,
+    // si el backend ya trae texto, lo usamos; si no, lo completamos luego
+    paciente: row?.pacienteNombre ?? undefined,
+    motivo: row?.motivo ?? undefined,
+    status: row?.estado as CitaStatus,
+    notas: row?.notas ?? undefined,
+  });
 
   /** Ordena por hora ascendente */
   private sortByHora(items: CitaItem[]): CitaItem[] {
     return [...items].sort((a, b) => a.hora.localeCompare(b.hora));
   }
 
-  /** ¿Existe otra cita ocupando esa hora? (ignora un id en edición) */
-  private horaOcupada(items: CitaItem[], hora: string, ignoreId?: string): boolean {
-    const target = this.normHora(hora);
-    return items.some(c =>
-      c.hora === target &&
-      c.status !== 'DISPONIBLE' &&
-      (!ignoreId || c.id !== ignoreId)
+  // ====== Enriquecer con nombres de pacientes SIN tocar backend ======
+
+  /** Obtiene nombre del paciente por id; maneja errores devolviendo undefined */
+  private fetchPacienteNombre(id: string): Observable<string | undefined> {
+    return this.http.get<PacienteRow>(`${this.baseUrl}/pacientes/${id}`).pipe(
+      map(p =>
+        (p?.nombre && p.nombre.trim()) ||
+        [p?.nombres, p?.apellidos].filter(Boolean).join(' ').trim() ||
+        undefined
+      ),
+      catchError(() => of(undefined))
     );
   }
 
-  /** Busca una cita por id en TODO el store */
-  private findById(map: Record<string, CitaItem[]>, id: string): { fecha: string; idx: number } | null {
-    for (const fecha of Object.keys(map)) {
-      const idx = (map[fecha] ?? []).findIndex(c => c.id === id);
-      if (idx >= 0) return { fecha, idx };
-    }
-    return null;
+  /** Dado un arreglo, trae nombres faltantes (1 request por id único) */
+  private enrichWithPacientes(items: CitaItem[]): Observable<CitaItem[]> {
+    const ids = Array.from(
+      new Set(
+        items
+          .filter(it => it.paciente == null && it.pacienteId)
+          .map(it => it.pacienteId!) // non-null
+      )
+    );
+
+    if (ids.length === 0) return of(items);
+
+    const calls = ids.map(id =>
+      this.fetchPacienteNombre(id).pipe(map(name => [id, name] as const))
+    );
+
+    return forkJoin(calls).pipe(
+      map(pairs => {
+        const dict = new Map<string, string | undefined>(pairs);
+        return items.map(it =>
+          it.paciente || !it.pacienteId
+            ? it
+            : { ...it, paciente: dict.get(it.pacienteId!) }
+        );
+      })
+    );
   }
 
-  /** —— GET (mock) ——  NO SIEMBRA DATOS por defecto */
-  private mock_getAgendaDia(fechaISO: string): Observable<AgendaDia> {
-    const map = this.readStore();
-    let items = map[fechaISO];
+  // ================== API PÚBLICA (usando tus endpoints actuales) ==================
 
-    if (!items) {
-      items = [];
-      map[fechaISO] = items;
-      this.writeStore(map);
-    }
-
-    return of<AgendaDia>({ fechaISO, items: this.sortByHora(items) });
+  /** GET /citas (filtramos por fecha en el cliente y completamos nombres) */
+  getAgendaDia(fechaISO: string): Observable<AgendaDia> {
+    return this.http.get<any[]>(`${this.baseUrl}/citas`, { params: { date: fechaISO } }).pipe(
+      map(rows => {
+        const items = (rows ?? [])
+          .filter((r: any) => this.toISO_ddMMyyyy(new Date(r?.fecha)) === fechaISO)
+          .map(this.mapRowToItem);
+        return this.sortByHora(items);
+      }),
+      switchMap(items => this.enrichWithPacientes(items)),
+      map(items => ({ fechaISO, items }))
+    );
   }
 
-  /** —— CREATE (mock) —— requiere paciente existente */
-  private mock_crearCita(body: {
+  /** POST /citas */
+  crearCita(body: {
     fechaISO: string;
     hora: string;
-    pacienteId: string;
-    pacienteNombre: string;
+    pacienteId: string;      // id del paciente existente (string en UI)
+    pacienteNombre: string;  // solo UI; backend lo ignora
     motivo: string;
     notas?: string;
   }): Observable<CitaItem> {
-    const map = this.readStore();
-    const items = map[body.fechaISO] ?? [];
-    const hora = this.normHora(body.hora);
-
-    if (this.horaOcupada(items, hora)) {
-      return throwError(() => new Error('HORARIO_OCUPADO'));
-    }
-
-    const id = (globalThis as any).crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
-    const nueva: CitaItem = {
-      id,
-      hora,
-      pacienteId: body.pacienteId,          // guardamos id de paciente
-      paciente: body.pacienteNombre,        // texto a mostrar
+    const payload = {
+      pacienteId: Number(body.pacienteId),
+      usuarioId: 1, // ajusta si tienes usuario real
+      fecha: this.toBackendDate(body.fechaISO, body.hora),
+      hora: this.normHora(body.hora),
       motivo: body.motivo,
-      notas: body.notas,
-      status: 'NUEVA',
+      estado: 'NUEVA' as CitaStatus,
+      notas: body.notas ?? null,
     };
 
-    map[body.fechaISO] = this.sortByHora([...items, nueva]);
-    this.writeStore(map);
-    return of(nueva);
+    return this.http.post<any>(`${this.baseUrl}/citas`, payload).pipe(
+      map(this.mapRowToItem),
+      switchMap(item =>
+        item.paciente
+          ? of(item)
+          : this.fetchPacienteNombre(item.pacienteId ?? '').pipe(
+              map(name => ({ ...item, paciente: name }))
+            )
+      )
+    );
   }
 
-  /** —— UPDATE STATUS (mock) —— (si no la encuentra en la fecha, busca en todo el store) */
-  private mock_actualizarEstado(id: string, status: CitaStatus, fechaISO: string): Observable<CitaItem> {
-    const map = this.readStore();
-    let items = map[fechaISO] ?? [];
-    let idx = items.findIndex(c => c.id === id);
-
-    if (idx < 0) {
-      const found = this.findById(map, id);
-      if (!found) return throwError(() => new Error('NO_ENCONTRADA'));
-      items = map[found.fecha];
-      idx = found.idx;
-    }
-
-    items[idx] = { ...items[idx], status };
-    this.writeStore(map);
-    return of(items[idx]);
+  /** PATCH /citas/:id (actualiza estado en el mismo endpoint) */
+  actualizarEstado(id: string, status: CitaStatus, _fechaISO: string): Observable<CitaItem> {
+    const payload = { estado: status };
+    return this.http.patch<any>(`${this.baseUrl}/citas/${id}`, payload).pipe(
+      map(this.mapRowToItem),
+      switchMap(item =>
+        item.paciente
+          ? of(item)
+          : this.fetchPacienteNombre(item?.pacienteId ?? '').pipe(
+              map(name => ({ ...item, paciente: name }))
+            )
+      )
+    );
   }
 
-  /** —— UPDATE (mock) —— permite mover de día y valida choques en el día destino */
-  private mock_actualizarCita(
+  /** PATCH /citas/:id  (editar hora/motivo/notas y/o mover de día enviando 'fecha') */
+  actualizarCita(
     id: string,
     fechaISO: string,
     payload: Partial<Pick<CitaItem, 'hora'|'paciente'|'motivo'|'notas'>>
   ): Observable<CitaItem> {
-    const map = this.readStore();
+    const patch: any = {};
+    if (payload.hora)   patch.hora   = this.normHora(payload.hora);
+    if (payload.motivo !== undefined) patch.motivo = payload.motivo;
+    if (payload.notas  !== undefined) patch.notas  = payload.notas;
+    if (fechaISO) patch.fecha = this.toBackendDate(fechaISO, patch.hora);
 
-    const located = this.findById(map, id);
-    if (!located) return throwError(() => new Error('NO_ENCONTRADA'));
-
-    const fromFecha = located.fecha;
-    const original = map[fromFecha][located.idx];
-    const targetFecha = fechaISO; // dd-MM-yyyy de destino
-
-    // Normaliza la hora de destino
-    const newHora = payload.hora ? this.normHora(payload.hora) : original.hora;
-
-    // Asegura arreglo destino
-    const targetItems = map[targetFecha] ?? (map[targetFecha] = []);
-
-    // Valida choque en el día destino (ignorando este id)
-    if (this.horaOcupada(targetItems, newHora, id)) {
-      return throwError(() => new Error('HORARIO_OCUPADO'));
-    }
-
-    const actualizado: CitaItem = {
-      ...original,
-      ...payload,
-      hora: newHora,
-    };
-
-    if (fromFecha === targetFecha) {
-      // Misma fecha → solo reemplazar y ordenar
-      map[targetFecha][located.idx] = actualizado;
-      map[targetFecha] = this.sortByHora(map[targetFecha]);
-    } else {
-      // Cambió de fecha → remover del día original y agregar al nuevo
-      map[fromFecha] = (map[fromFecha] ?? []).filter(c => c.id !== id);
-      map[targetFecha] = this.sortByHora([...targetItems, actualizado]);
-    }
-
-    this.writeStore(map);
-    return of(actualizado);
+    return this.http.patch<any>(`${this.baseUrl}/citas/${id}`, patch).pipe(
+      map(this.mapRowToItem),
+      switchMap(item =>
+        item.paciente
+          ? of(item)
+          : this.fetchPacienteNombre(item?.pacienteId ?? '').pipe(
+              map(name => ({ ...item, paciente: name }))
+            )
+      )
+    );
   }
 
-  /** —— DELETE (mock) —— si no la encuentra en la fecha, busca en todo el store */
-  private mock_eliminarCita(fechaISO: string, id: string): Observable<boolean> {
-    const map = this.readStore();
-    let items = map[fechaISO] ?? [];
-    let before = items.length;
-    items = items.filter(c => c.id !== id);
-    map[fechaISO] = items;
-
-    if (items.length === before) {
-      // no estaba en esa fecha → buscar globalmente
-      const found = this.findById(map, id);
-      if (found) {
-        map[found.fecha] = (map[found.fecha] ?? []).filter(c => c.id !== id);
-      }
-    }
-
-    this.writeStore(map);
-    return of(true);
+  /** DELETE /citas/:id */
+  eliminarCita(_fechaISO: string, id: string): Observable<boolean> {
+    return this.http.delete<boolean>(`${this.baseUrl}/citas/${id}`);
   }
+
+  // Mock OFF
+  clearMock(): void { /* no-op */ }
 }
