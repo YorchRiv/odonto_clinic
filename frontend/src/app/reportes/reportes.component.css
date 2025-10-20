@@ -4,18 +4,20 @@
 .title { margin: 0; font-weight: 700; }
 .subtitle { margin: 4px 0 0; opacity: .8; }
 
+/* color #167EB5 acorde al navbar y al sidebar ctrl + shift + l sobre el texto para modificar todas sus coincidencias */
+
 /* Botones export */
 .export-buttons { display: flex; gap: 8px; }
 .btn { border: none; border-radius: 10px; padding: 8px 12px; cursor: pointer; }
 .btn-sm { padding: 6px 10px; font-size: 0.9rem; }
 .btn-outline { background: transparent; border: 1px solid #cfcfcf; }
-.btn.primary { background: #6e34da; color: #fff; }
+.btn.primary { background: #167EB5; color: #fff; }
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 
 /* Tabs */
 .tabs { display: flex; gap: 8px; margin-bottom: 10px; }
-.tab { background: #f2ecff; color: #5b2ad6; border-radius: 999px; padding: 6px 14px; border: 1px solid transparent; cursor: pointer; }
-.tab.active { background: #6e34da; color: #fff; }
+.tab { background: #f2ecff; color: #167EB5; border-radius: 999px; padding: 6px 14px; border: 1px solid transparent; cursor: pointer; }
+.tab.active { background: #167EB5; color: #fff; }
 
 /* Cards */
 .card { background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 6px 16px rgba(0,0,0,.05); margin-bottom: 12px; }
@@ -28,7 +30,7 @@
   border: 1px solid #ddd; border-radius: 10px; padding: 8px 10px; outline: none; background: #fff;
 }
 .filters input[type="text"]:focus, .filters input[type="date"]:focus, .filters select:focus {
-  border-color: #6e34da; box-shadow: 0 0 0 3px rgba(110,52,218,.12);
+  border-color: #167EB5; box-shadow: 0 0 0 3px rgba(110,52,218,.12);
 }
 .filters .col.disabled { opacity: .6; }
 .actions { display: flex; justify-content: flex-end; margin-top: 8px; }

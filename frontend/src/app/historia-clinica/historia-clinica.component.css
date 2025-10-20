@@ -1,13 +1,14 @@
+/* color #167EB5 acorde al navbar y al sidebar ctrl + shift + l sobre el texto para modificar todas sus coincidencias */
 /* Avatares */
 .avatar-small {
   width: 32px; height: 32px; border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #167EB5 100%);
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-weight: 600; font-size: 12px;
 }
 .avatar-large {
   width: 56px; height: 56px; border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #167EB5 100%);
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-weight: 600; font-size: 18px;
 }

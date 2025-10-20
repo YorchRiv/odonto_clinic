@@ -7,11 +7,6 @@
 .toolbar .input-group .input-group-text { border-right: 0; }
 .toolbar .form-control { border-left: 0; }
 
-.avatar {
-  width: 36px; height: 36px; border-radius: 999px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-weight: 700; color: #fff; background: #a78bfa;
-}
 
 .icon-btn {
   border: 0; background: transparent; padding: 6px 8px; border-radius: 8px;

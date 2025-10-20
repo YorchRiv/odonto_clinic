@@ -4,7 +4,7 @@
 <!-- Métricas -->
 <div class="row g-3 mb-4">
   <div class="col-md-3">
-    <div class="card text-white border-0 shadow-sm" style="background-color:#ec4899;">
+    <div class="card text-white border-0 shadow-sm metric-citashoy">
       <div class="card-body">
         <h6 class="mb-1">Citas Hoy</h6>
         <div class="fs-4 fw-bold">{{ citasHoyCount() }}</div>
@@ -13,7 +13,7 @@
   </div>
 
   <div class="col-md-3">
-    <div class="card text-white border-0 shadow-sm" style="background-color:#06b6d4;">
+    <div class="card text-white border-0 shadow-sm metric-p_activos">
       <div class="card-body">
         <h6 class="mb-1">Pacientes Activos</h6>
         <div class="fs-4 fw-bold">{{ pacActivosCount() }}</div>
@@ -22,7 +22,7 @@
   </div>
 
   <div class="col-md-3">
-    <div class="card text-white border-0 shadow-sm" style="background-color:#ff8e43;">
+    <div class="card text-white border-0 shadow-sm metric-p_inactivos">
       <div class="card-body">
         <h6 class="mb-1">Pacientes Inactivos</h6>
         <div class="fs-4 fw-bold">{{ pacInactivosCount() }}</div>
@@ -31,7 +31,7 @@
   </div>
 
   <div class="col-md-3">
-    <div class="card text-white border-0 shadow-sm" style="background-color:#22c55e;">
+    <div class="card text-white border-0 shadow-sm metric-total-pacientes">
       <div class="card-body">
         <h6 class="mb-1">Total Pacientes</h6>
         <div class="fs-4 fw-bold">{{ pacTotalCount() }}</div>
@@ -133,9 +133,8 @@
 
               <!-- Sugerencias -->
               <div
-                class="dropdown-menu w-100 show"
+                class="dropdown-menu w-100 show dropdown-scroll"
                 *ngIf="mostrandoSugerencias() && resultadosPacientes().length"
-                style="max-height: 220px; overflow:auto;"
               >
                 <button
                   type="button"

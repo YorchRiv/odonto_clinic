@@ -1,0 +1,12 @@
+/* Tarjetas de métricas (colores) */
+.metric-citashoy   { background-color: #e863fa; }
+.metric-p_activos   { background-color: #06b6d4; }
+.metric-p_inactivos { background-color: #ff8e43; }
+.metric-total-pacientes  { background-color: #22c55e; }
+
+/* Dropdown de sugerencias con scroll */
+/* Ajusta la altura máxima y agrega scroll se usa en el menú de sugerencias del autocompletado de “Paciente” dentro del modal “Nueva Cita”.*/
+.dropdown-scroll {
+  max-height: 220px;
+  overflow: auto;
+}

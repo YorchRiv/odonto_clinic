@@ -1,7 +1,10 @@
 /* Estilos globales para la aplicación */
+
+/* Usado en navbar y sidebar */
 /* Gradiente compartido para navbar y sidebar */
+/* #7a4fe0, #7a4fe0 60%, #6366f1 morado */
 .navbar-gradient, #sidebar {
-  background: linear-gradient(90deg, #7a4fe0, #7a4fe0 60%, #6366f1);
+  background: linear-gradient(90deg, #167EB5, #167EB5 60%, #3aa4dd);
   color: white;
 }
 
@@ -34,3 +37,11 @@
 .status-pill.finalizada { background: #b8c8db; color: #383b42; } /* gris */
 .status-pill.cancelada  { background: #fee2e2; color: #991b1b; } /* rojo */
 
+
+/* Avatar global */
+/* Usado en pacientes y configuración, ir al configuracion.component.css */
+.avatar{
+  width:36px; height:36px; border-radius:999px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-weight:700; color:#fff; background:#167EB5;
+}

@@ -1,3 +1,6 @@
+
+/* color #167EB5 acorde al navbar y al sidebar ctrl + shift + l sobre el texto para modificar todas sus coincidencias */
+
 /* ===== Layout general ===== */
 .page { padding: 8px 8px 24px; }
 .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -17,8 +20,8 @@
 .day { height: 34px; border: 0; border-radius: 8px; background: #f3f4f6; font-weight: 600; color: #374151; }
 .day:hover { filter: brightness(0.97); }
 .day.muted { background: transparent; color: #cbd5e1; }
-.day.today { outline: 2px solid #8b5cf6; }
-.day.selected { background: #8b5cf6; color: #fff; }
+.day.today { outline: 2px solid #167EB5; }
+.day.selected { background: #167EB5; color: #fff; }
 
 /* ===== Agenda del día ===== */
 .schedule-card .card-header { background: transparent; }

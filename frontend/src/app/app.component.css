@@ -6,7 +6,6 @@
   font-weight: bold;
 }
 
-
 /* Asegura que el wrapper tenga al menos el alto de la ventana */
 .app-shell { min-height: 100vh; }
 
