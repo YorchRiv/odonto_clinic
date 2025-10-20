@@ -65,9 +65,9 @@ export class PacientesService {
   /** Construye payload para el backend desde el modelo del FE */
   private mapToApi(p: Partial<Paciente>) {
     const body = {
-      nombre: p.nombres?.trim(),
-      apellido: p.apellidos?.trim(),
-      identificacion: p.dpi?.trim(),
+      nombres: p.nombres?.trim(),
+      apellidos: p.apellidos?.trim(),
+      dpi: p.dpi?.trim(),
       telefono: (p.telefono ?? '').toString().trim(),
       email: p.email?.trim() ?? null,
       direccion: p.direccion?.trim() ?? null,

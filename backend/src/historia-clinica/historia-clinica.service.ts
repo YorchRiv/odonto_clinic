@@ -5,32 +5,49 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class HistoriaClinicaService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(createHistoriaClinicaDto: CreateHistoriaClinicaDto) {
+  create(createHistoriaClinicaDto: CreateHistoriaClinicaDto) {
     return this.prisma.historiaClinica.create({
       data: createHistoriaClinicaDto,
+      include: {
+        cita: true,
+        paciente: true,
+      },
     });
   }
 
-  async findAll() {
-    return this.prisma.historiaClinica.findMany();
+  findAll() {
+    return this.prisma.historiaClinica.findMany({
+      include: {
+        cita: true,
+        paciente: true,
+      },
+    });
   }
 
-  async findOne(id: number) {
+  findOne(id: number) {
     return this.prisma.historiaClinica.findUnique({
       where: { id },
+      include: {
+        cita: true,
+        paciente: true,
+      },
     });
   }
 
-  async update(id: number, updateHistoriaClinicaDto: UpdateHistoriaClinicaDto) {
+  update(id: number, updateHistoriaClinicaDto: UpdateHistoriaClinicaDto) {
     return this.prisma.historiaClinica.update({
       where: { id },
       data: updateHistoriaClinicaDto,
+      include: {
+        cita: true,
+        paciente: true,
+      },
     });
   }
 
-  async remove(id: number) {
+  remove(id: number) {
     return this.prisma.historiaClinica.delete({
       where: { id },
     });

@@ -20,17 +20,20 @@ datasource db {
 }
 
 model Usuario {
-  id          Int       @id @default(autoincrement())
-  nombre      String
-  apellido    String
-  email       String    @unique
-  password    String
-  rol         Rol       @default(RECEPCIONISTA)
-  creadoEn    DateTime  @default(now())
-  actualizadoEn DateTime @updatedAt
+  id            Int       @id @default(autoincrement())
+  nombre        String
+  apellido      String
+  email         String    @unique
+  password      String
+  rol           Rol       @default(RECEPCIONISTA)
+  refreshToken  String?   // Para JWT refresh token
+  lastLogin     DateTime?
+  activo        Boolean   @default(true)
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
 
-  pacientes   Paciente[] 
-  citas       Cita[]
+  pacientes     Paciente[] 
+  citas         Cita[]
 }
 
 enum Rol {
@@ -41,14 +44,13 @@ enum Rol {
 
 model Paciente {
   id             Int       @id @default(autoincrement())
-  nombre         String
-  apellido       String @default("")
-  identificacion String    @unique
-  telefono       String?
+  nombres        String
+  apellidos      String
+  dpi            String?   @unique
+  telefono       String
   email          String?
   direccion      String?
   fechaNacimiento DateTime?
-  ultimaVisita   DateTime?
   estado         EstadoPaciente @default(ACTIVO)
   alergias       String?
   creadoPorId    Int
@@ -64,23 +66,15 @@ enum EstadoPaciente {
   INACTIVO
 }
 
-model Servicio {
-  id          Int      @id @default(autoincrement())
-  nombre      String   @unique
-  descripcion String?
-  citas       Cita[]
-}
-
 model Cita {
   id          Int      @id @default(autoincrement())
   pacienteId  Int
   paciente    Paciente @relation(fields: [pacienteId], references: [id])
   usuarioId   Int
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
-  servicioId  Int
-  servicio    Servicio @relation(fields: [servicioId], references: [id])
-  fechaInicio DateTime
-  fechaFin    DateTime
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])  
+  fecha       DateTime
+  hora        String
+  motivo      String
   estado      EstadoCita @default(NUEVA)
   notas       String?
   historia    HistoriaClinica?
@@ -89,11 +83,12 @@ model Cita {
 }
 
 enum EstadoCita {
-  NUEVA
   CONFIRMADA
   PENDIENTE
+  NUEVA
+  FINALIZADA
   CANCELADA
-  COMPLETADA
+  DISPONIBLE
 }
 
 model HistoriaClinica {
@@ -102,10 +97,9 @@ model HistoriaClinica {
   cita             Cita     @relation(fields: [citaId], references: [id])
   pacienteId       Int
   paciente         Paciente @relation(fields: [pacienteId], references: [id])
-  descripcion      String
+  descripcion      String?
   diagnostico      String?
   tratamiento      String?
-  tipoTratamiento  String?  // Limpieza, Ortodoncia, Tratamiento, etc.
   observaciones    String?
   creadoEn         DateTime @default(now())
   actualizadoEn    DateTime @updatedAt

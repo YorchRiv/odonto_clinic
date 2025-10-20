@@ -5,32 +5,53 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CitasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(createCitaDto: CreateCitaDto) {
+  create(createCitaDto: CreateCitaDto) {
     return this.prisma.cita.create({
       data: createCitaDto,
+      include: {
+        paciente: true,
+        usuario: true,
+        historia: true,
+      },
     });
   }
 
-  async findAll() {
-    return this.prisma.cita.findMany();
+  findAll() {
+    return this.prisma.cita.findMany({
+      include: {
+        paciente: true,
+        usuario: true,
+        historia: true,
+      },
+    });
   }
 
-  async findOne(id: number) {
+  findOne(id: number) {
     return this.prisma.cita.findUnique({
       where: { id },
+      include: {
+        paciente: true,
+        usuario: true,
+        historia: true,
+      },
     });
   }
 
-  async update(id: number, updateCitaDto: UpdateCitaDto) {
+  update(id: number, updateCitaDto: UpdateCitaDto) {
     return this.prisma.cita.update({
       where: { id },
       data: updateCitaDto,
+      include: {
+        paciente: true,
+        usuario: true,
+        historia: true,
+      },
     });
   }
 
-  async remove(id: number) {
+  remove(id: number) {
     return this.prisma.cita.delete({
       where: { id },
     });
