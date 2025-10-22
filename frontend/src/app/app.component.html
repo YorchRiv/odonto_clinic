@@ -1,107 +1,105 @@
-<!-- Navbar superior -->
-<nav class="navbar navbar-expand-lg navbar-dark sticky-top navbar-gradient">
-  <div class="container-fluid">
-    <!-- Logo + Nombre -->
-    <a class="navbar-brand d-flex align-items-center fs-2" routerLink="/dashboard">
-      <i class="fa-solid fa-tooth me-2"></i>
-      <span class="fw-bold fs-4">DentalPro</span>
-    </a>
+<!-- Mostrar layout solo si NO estoy en /login -->
+<div *ngIf="!isLoginRoute; else loginOutlet">
+  <!-- Navbar superior -->
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top navbar-gradient">
+    <div class="container-fluid">
+      <!-- Logo + Nombre -->
+      <a class="navbar-brand d-flex align-items-center fs-2" routerLink="/dashboard">
+        <i class="fa-solid fa-tooth me-2"></i>
+        <span class="fw-bold fs-4">DentalPro</span>
+      </a>
 
-    <!-- Lado derecho -->
-    <div class="d-flex align-items-center ms-auto">
-      <!-- Usuario -->
-      <div class="dropdown">
-        <a
-          class="d-flex align-items-center text-white text-decoration-none dropdown-toggle"
-          href="#"
-          id="dropdownUser"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-        >
-          <strong>Dra. Ana Maria Polo</strong>
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownUser">
-          <li><a class="dropdown-item" routerLink="">Perfil</a></li>
-           <li><a class="dropdown-item" routerLink="/configuracion">Configuración</a></li>
-          <li><hr class="dropdown-divider" /></li>
-          <!-- <li><button class="dropdown-item" type="button" (click)="logout()">Cerrar sesión</button></li> -->
-          <li><a class="dropdown-item" routerLink="">Cerrar sesión</a></li>
-
-        </ul>
+      <!-- Lado derecho -->
+      <div class="d-flex align-items-center ms-auto">
+        <!-- Usuario -->
+        <div class="dropdown">
+          <a
+            class="d-flex align-items-center text-white text-decoration-none dropdown-toggle"
+            href="#"
+            id="dropdownUser"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <strong>Dra. Ana Maria Polo</strong>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownUser">
+            <li><a class="dropdown-item" routerLink="">Perfil</a></li>
+            <li><a class="dropdown-item" routerLink="/configuracion">Configuración</a></li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <button class="dropdown-item" type="button" (click)="logout()">
+                Cerrar sesión
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
-
-<!-- Layout principal -->
-<div class="d-flex app-shell">
-  <!-- Sidebar -->
-  <nav id="sidebar" class="col-md-2 d-md-block sidebar">
-    <ul class="nav flex-column">
-      <li class="nav-item mb-1">
-        <a class="nav-link text-white d-flex align-items-center gap-2"
-           routerLink="/dashboard"
-           routerLinkActive="active"
-        >
-          <i class="fa-solid fa-chart-line"></i>
-          <span class="text-nowrap">Dashboard</span>
-        </a>
-      </li>
-
-      <li class="nav-item mb-1">
-        <a class="nav-link text-white d-flex align-items-center gap-2"
-           routerLink="/agenda"
-           routerLinkActive="active"
-        >
-          <i class="fa-solid fa-calendar-check"></i>
-          <span class="text-nowrap">Agenda</span>
-        </a>
-      </li>
-
-      <li class="nav-item mb-1">
-        <a class="nav-link text-white d-flex align-items-center gap-2"
-           routerLink="/pacientes"
-           routerLinkActive="active"
-        >
-          <i class="fa-solid fa-users"></i>
-          <span class="text-nowrap">Pacientes</span>
-        </a>
-      </li>
-
-      <li class="nav-item mb-1">
-        <a class="nav-link text-white d-flex align-items-center gap-2"
-           routerLink="/historia-clinica"
-           routerLinkActive="active"
-        >
-          <i class="fa-solid fa-notes-medical"></i>
-          <span class="text-nowrap">Historia Clínica</span>
-        </a>
-      </li>
-
-      <li class="nav-item mb-1">
-        <a class="nav-link text-white d-flex align-items-center gap-2"
-           routerLink="/reportes"
-           routerLinkActive="active"
-        >
-          <i class="fa-solid fa-chart-pie"></i>
-          <span class="text-nowrap">Reportes</span>
-        </a>
-      </li>
-
-      <li class="nav-item mb-1">
-        <a class="nav-link text-white d-flex align-items-center gap-2"
-           routerLink="/configuracion"
-           routerLinkActive="active"
-        >
-          <i class="fa-solid fa-gear"></i>
-          <span class="text-nowrap">Configuración</span>
-        </a>
-      </li>
-    </ul>
   </nav>
 
-  <!-- Contenido dinámico -->
-  <main class="col-md-10 ms-sm-auto px-md-4 py-4">
-    <router-outlet></router-outlet>
-  </main>
+  <!-- Layout principal -->
+  <div class="d-flex app-shell">
+    <!-- Sidebar -->
+    <nav id="sidebar" class="col-md-2 d-md-block sidebar">
+      <ul class="nav flex-column">
+        <li class="nav-item mb-1">
+          <a class="nav-link text-white d-flex align-items-center gap-2"
+             routerLink="/dashboard" routerLinkActive="active">
+            <i class="fa-solid fa-chart-line"></i>
+            <span class="text-nowrap">Dashboard</span>
+          </a>
+        </li>
+
+        <li class="nav-item mb-1">
+          <a class="nav-link text-white d-flex align-items-center gap-2"
+             routerLink="/agenda" routerLinkActive="active">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span class="text-nowrap">Agenda</span>
+          </a>
+        </li>
+
+        <li class="nav-item mb-1">
+          <a class="nav-link text-white d-flex align-items-center gap-2"
+             routerLink="/pacientes" routerLinkActive="active">
+            <i class="fa-solid fa-users"></i>
+            <span class="text-nowrap">Pacientes</span>
+          </a>
+        </li>
+
+        <li class="nav-item mb-1">
+          <a class="nav-link text-white d-flex align-items-center gap-2"
+             routerLink="/historia-clinica" routerLinkActive="active">
+            <i class="fa-solid fa-notes-medical"></i>
+            <span class="text-nowrap">Historia Clínica</span>
+          </a>
+        </li>
+
+        <li class="nav-item mb-1">
+          <a class="nav-link text-white d-flex align-items-center gap-2"
+             routerLink="/reportes" routerLinkActive="active">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span class="text-nowrap">Reportes</span>
+          </a>
+        </li>
+
+        <li class="nav-item mb-1">
+          <a class="nav-link text-white d-flex align-items-center gap-2"
+             routerLink="/configuracion" routerLinkActive="active">
+            <i class="fa-solid fa-gear"></i>
+            <span class="text-nowrap">Configuración</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Contenido dinámico -->
+    <main class="col-md-10 ms-sm-auto px-md-4 py-4">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
 </div>
+
+<!-- En /login solo se renderiza el outlet (sin navbar/side) -->
+<ng-template #loginOutlet>
+  <router-outlet></router-outlet>
+</ng-template>
