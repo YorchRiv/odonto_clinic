@@ -28,8 +28,8 @@ export class UsuariosService {
   private http = inject(HttpClient);
 
   private readonly useMock = false;
-  private readonly baseUrl = 'http://localhost:3000';
-  //private readonly baseUrl = 'https://odonto-clinic.onrender.com';
+  //private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
   private readonly STORAGE_KEY = 'dentalpro_usuarios_v1';
 
   // ========= Helpers (map FE -> API y utilidades) =========
