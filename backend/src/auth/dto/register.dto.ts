@@ -1,4 +1,12 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsEnum } from 'class-validator';
+
+enum Rol {
+  ADMIN = 'ADMIN',
+  DOCTOR = 'DOCTOR',
+  RECEPCIONISTA = 'RECEPCIONISTA'
+}
+
+export { Rol };
 
 export class RegisterDto {
   @IsEmail()
@@ -13,4 +21,7 @@ export class RegisterDto {
 
   @IsString()
   apellido: string;
+
+  @IsEnum(Rol, { message: 'El rol debe ser ADMIN, DOCTOR o RECEPCIONISTA' })
+  rol: Rol;
 }

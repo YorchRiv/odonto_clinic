@@ -6,7 +6,7 @@ async function bootstrap() {
   
   // Habilitar CORS
   app.enableCors({
-    origin: ['http://localhost:4200', 'https://yorchriv.github.io'],
+    origin: ['http://localhost:4200', 'https://yorchriv.github.io', 'https://odonto-clinic.onrender.com'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

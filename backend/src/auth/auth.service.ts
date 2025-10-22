@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +30,7 @@ export class AuthService {
         password: hashedPassword,
         nombre: registerDto.nombre,
         apellido: registerDto.apellido,
+        rol: registerDto.rol as 'ADMIN' | 'DOCTOR' | 'RECEPCIONISTA',
       },
     });
 
@@ -98,5 +100,63 @@ export class AuthService {
         rol: true,
       },
     });
+  }
+
+  async updateUser(userId: number, updateUserDto: UpdateUserDto) {
+    // Verificar si el usuario existe
+    const userExists = await this.prisma.usuario.findUnique({
+      where: { id: userId },
+    });
+
+    if (!userExists) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+
+    // Si se está actualizando el email, verificar que no exista
+    if (updateUserDto.email) {
+      const existingUser = await this.prisma.usuario.findFirst({
+        where: { 
+          AND: [
+            { email: updateUserDto.email },
+            { id: { not: userId } }
+          ]
+        },
+      });
+
+      if (existingUser) {
+        throw new ConflictException('El email ya está registrado por otro usuario');
+      }
+    }
+
+    // Preparar los datos para actualizar
+    const updateData: any = {};
+
+    // Solo incluir los campos que se proporcionaron
+    if (updateUserDto.email) updateData.email = updateUserDto.email;
+    if (updateUserDto.nombre) updateData.nombre = updateUserDto.nombre;
+    if (updateUserDto.apellido) updateData.apellido = updateUserDto.apellido;
+    if (updateUserDto.rol) updateData.rol = updateUserDto.rol;
+    
+    // Si hay una nueva contraseña, hashearla
+    if (updateUserDto.password) {
+      updateData.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    try {
+      // Realizar la actualización
+      const updatedUser = await this.prisma.usuario.update({
+        where: { 
+          id: userId 
+        },
+        data: updateData,
+      });
+
+      // Remover la contraseña del resultado
+      const { password, ...result } = updatedUser;
+      return result;
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error);
+      throw new ConflictException('Error al actualizar el usuario');
+    }
   }
 }

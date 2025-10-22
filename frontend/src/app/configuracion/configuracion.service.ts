@@ -28,8 +28,8 @@ export class UsuariosService {
   private http = inject(HttpClient);
 
   private readonly useMock = false;
-  //private readonly baseUrl = 'http://localhost:3000';
-  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
+  private readonly baseUrl = 'http://localhost:3000';
+  //private readonly baseUrl = 'https://odonto-clinic.onrender.com';
   private readonly STORAGE_KEY = 'dentalpro_usuarios_v1';
 
   // ========= Helpers (map FE -> API y utilidades) =========
@@ -71,13 +71,15 @@ export class UsuariosService {
   create(data: UsuarioCreate): Observable<Usuario> {
     if (this.useMock) return this.mock_create(data).pipe(delay(120));
     const body = this.mapToApi(data);
-    return this.http.post<Usuario>(`${this.baseUrl}/usuarios`, body);
+    return this.http.post<Usuario>(`${this.baseUrl}/auth/register/`, body);
   }
 
   update(id: string, changes: Partial<UsuarioCreate & Usuario>): Observable<Usuario> {
     if (this.useMock) return this.mock_update(id, changes).pipe(delay(120));
     const body = this.mapToApi(changes);
-    return this.http.patch<Usuario>(`${this.baseUrl}/usuarios/${id}`, body);
+    // Convertir el ID a número antes de enviarlo
+    const numericId = this.toApiId(id);
+    return this.http.patch<Usuario>(`${this.baseUrl}/usuarios/${numericId}`, body);
   }
 
   delete(id: string): Observable<boolean> {
