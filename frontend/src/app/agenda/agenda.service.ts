@@ -39,7 +39,8 @@ type PacienteRow = {
 @Injectable({ providedIn: 'root' })
 export class AgendaService {
   private http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:3000';
+  //private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
 
   // ================== Helpers de fecha y mapeos ==================
 

@@ -16,7 +16,8 @@ export interface HistoriaClinica {
 @Injectable({ providedIn: 'root' })
 export class HistoriaClinicaService {
   private http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:3000';
+  //private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
 
   // ===== Helpers de fecha / orden =====
   private toISO_ddMMyyyy(d: Date): string {
