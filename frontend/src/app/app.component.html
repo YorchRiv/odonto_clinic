@@ -20,7 +20,7 @@
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >
-            <strong>Dra. Ana Maria Polo</strong>
+            <strong>{{ currentUser?.nombre }} {{ currentUser?.apellido || '' }}</strong>
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownUser">
             <li><a class="dropdown-item" routerLink="">Perfil</a></li>

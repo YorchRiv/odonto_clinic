@@ -13,6 +13,7 @@ import { AuthService } from './core/auth.service';
 })
 export class AppComponent {
   isLoginRoute = false;
+  currentUser: any;
 
   private router = inject(Router);
   private auth = inject(AuthService);
@@ -20,12 +21,14 @@ export class AppComponent {
   constructor() {
     // Valor inicial (por si se entra directo a /login)
     this.isLoginRoute = this.router.url.startsWith('/login');
+    this.currentUser = this.auth.getCurrentUser();
 
     // Actualiza en cada navegación
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe(() => {
         this.isLoginRoute = this.router.url.startsWith('/login');
+        this.currentUser = this.auth.getCurrentUser();
       });
   }
 
