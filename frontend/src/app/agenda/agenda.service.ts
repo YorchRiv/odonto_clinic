@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, switchMap, catchError } from 'rxjs/operators';
+import { AuthService } from '../core/auth.service';
 
 /** ===== Tipos de la Agenda (mismos que tu UI) ===== */
 export type CitaStatus =
@@ -39,6 +40,7 @@ type PacienteRow = {
 @Injectable({ providedIn: 'root' })
 export class AgendaService {
   private http = inject(HttpClient);
+  private authService = inject(AuthService); // Inyectamos el servicio de autenticación
   //private readonly baseUrl = 'http://localhost:3000';
   private readonly baseUrl = 'https://odonto-clinic.onrender.com';
 
@@ -158,9 +160,15 @@ export class AgendaService {
 
   /** GET /citas (filtramos por fecha en el cliente y completamos nombres) */
   getAgendaDia(fechaISO: string): Observable<AgendaDia> {
+    const currentUser = this.authService.getCurrentUser(); // Obtenemos el usuario logueado
+    if (!currentUser) {
+      throw new Error('Usuario no logueado');
+    }
+
     return this.http.get<any[]>(`${this.baseUrl}/citas`, { params: { date: fechaISO } }).pipe(
       map(rows => {
         const items = (rows ?? [])
+          .filter((r: any) => r.usuarioId === currentUser.id) // Filtramos por usuarioId
           .filter((r: any) => this.toISO_ddMMyyyy(new Date(r?.fecha)) === fechaISO)
           .map(this.mapRowToItem);
         return this.sortByHora(items);
@@ -179,9 +187,14 @@ export class AgendaService {
     motivo: string;
     notas?: string;
   }): Observable<CitaItem> {
+    const currentUser = this.authService.getCurrentUser(); // Obtenemos el usuario logueado
+    if (!currentUser) {
+      throw new Error('Usuario no logueado');
+    }
+
     const payload = {
       pacienteId: Number(body.pacienteId),
-      usuarioId: 1, // ajusta si tienes usuario real
+      usuarioId: currentUser.id, // Usamos el ID del usuario logueado
       fecha: this.toBackendDate(body.fechaISO, body.hora),
       hora: this.normHora(body.hora),
       motivo: body.motivo,

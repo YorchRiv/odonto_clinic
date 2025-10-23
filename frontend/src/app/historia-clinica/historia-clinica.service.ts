@@ -5,6 +5,7 @@ import { Observable, of, forkJoin } from 'rxjs';
 import { catchError, map, switchMap, timeout } from 'rxjs/operators';
 import { CitaItem } from '../agenda/agenda.service';
 import { Paciente } from '../pacientes/pacientes.service';
+import { AuthService } from '../core/auth.service';
 
 export type CitaConFecha = CitaItem & { fechaISO: string };
 
@@ -16,6 +17,7 @@ export interface HistoriaClinica {
 @Injectable({ providedIn: 'root' })
 export class HistoriaClinicaService {
   private http = inject(HttpClient);
+  private authService = inject(AuthService); // Inyectamos el servicio de autenticación
   //private readonly baseUrl = 'http://localhost:3000';
   private readonly baseUrl = 'https://odonto-clinic.onrender.com';
 
@@ -58,6 +60,7 @@ export class HistoriaClinicaService {
       // Si el backend trae fechaNacimiento ISO, la dejamos tal cual; si viniera dd-MM-yyyy también lo aceptamos
       fechaNacimiento: row?.fechaNacimiento ?? null,
       dpi: row?.dpi ?? null,
+      creadoPorId: row?.creadoPorId ?? null, // Aseguramos el mapeo del campo creadoPorId
       createdAt: createdAt ?? undefined,
       updatedAt: updatedAt ?? undefined,
     };
@@ -96,11 +99,24 @@ export class HistoriaClinicaService {
   // =============== API Pública ===============
   /** Carga paciente + citas reales para ese paciente (mantiene tu diseño) */
   getHistoriaClinica(pacienteId: number | string): Observable<HistoriaClinica> {
+    const currentUser = this.authService.getCurrentUser(); // Obtenemos el usuario logueado
+    if (!currentUser) {
+      throw new Error('Usuario no logueado');
+    }
+
     return this.resolvePacienteId(pacienteId).pipe(
       switchMap(idNum => {
         const paciente$ = this.http
           .get<any>(`${this.baseUrl}/pacientes/${idNum}`)
-          .pipe(map(this.mapPaciente));
+          .pipe(
+            map(this.mapPaciente),
+            map(paciente => {
+              if (paciente.creadoPorId !== currentUser.id) {
+                throw new Error('PACIENTE_NO_AUTORIZADO');
+              }
+              return paciente;
+            })
+          );
 
         const citas$ = this.http
           .get<any[]>(`${this.baseUrl}/citas`, { params: { pacienteId: String(idNum) } })
@@ -148,13 +164,21 @@ export class HistoriaClinicaService {
 
   /** Busca pacientes (usa ?search y si no, filtra localmente) — mapeando fechas */
   buscarPacientes(query: string): Observable<Paciente[]> {
+    const currentUser = this.authService.getCurrentUser(); // Obtenemos el usuario logueado
+    if (!currentUser) {
+      throw new Error('Usuario no logueado');
+    }
+
     const q = (query ?? '').trim();
     if (!q) return of([]);
 
     return this.http.get<any[]>(`${this.baseUrl}/pacientes`, { params: { search: q } }).pipe(
       switchMap(list => {
         if (Array.isArray(list) && list.length) {
-          return of(list.map(this.mapPaciente));
+          return of(list
+            .map(this.mapPaciente)
+            .filter(paciente => paciente.creadoPorId === currentUser.id) // Filtramos por creadoPorId
+          );
         }
         // Fallback: traer todos y filtrar local
         return this.http.get<any[]>(`${this.baseUrl}/pacientes`).pipe(
@@ -167,8 +191,9 @@ export class HistoriaClinicaService {
                 (p.email ?? '').toLowerCase().includes(ql) ||
                 (p.dpi ?? '').toLowerCase().includes(ql)
               )
-              .slice(0, 20)
-              .map(this.mapPaciente);
+              .map(this.mapPaciente)
+              .filter(paciente => paciente.creadoPorId === currentUser.id) // Filtramos por creadoPorId
+              .slice(0, 20);
           })
         );
       }),

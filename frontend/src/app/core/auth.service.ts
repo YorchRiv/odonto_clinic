@@ -9,6 +9,11 @@ interface LoginResponse {
   user?: any; // ajusta si tu API devuelve más campos
 }
 
+interface LoggedUser {
+  id: string;
+  // Otros campos relevantes del usuario logueado
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
@@ -53,7 +58,7 @@ export class AuthService {
     }
   }
 
-  getCurrentUser(): any {
+  getCurrentUser(): LoggedUser | null {
     const raw = localStorage.getItem('user');
     if (!raw) return null;
     try {

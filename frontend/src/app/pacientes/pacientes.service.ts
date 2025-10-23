@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError, delay, map } from 'rxjs';
+import { AuthService } from '../core/auth.service';
 
 export type PacienteEstado = 'ACTIVO' | 'INACTIVO';
 
@@ -17,6 +18,7 @@ export interface Paciente {
   fechaNacimiento?: string | null;
   dpi?: string | null;
 
+  creadoPorId?: string; // ID del usuario que creó el paciente
   createdAt?: string; // ISO
   updatedAt?: string; // ISO
 }
@@ -28,6 +30,7 @@ export type PacienteCreate = Omit<Paciente, 'id'|'createdAt'|'updatedAt'>;
 })
 export class PacientesService {
   private http = inject(HttpClient);
+  private authService = inject(AuthService); // Inyectamos el servicio de autenticación
 
   private readonly useMock = false; // <- deja en false porque ya conectaste backend
   //private readonly baseUrl = 'http://localhost:3000';
@@ -90,6 +93,8 @@ export class PacientesService {
 
     dpi: r?.dpi ?? null,
 
+    creadoPorId: r?.creadoPorId ?? null, // Mapeamos el campo creadoPorId
+
     // FIX: backend usa creadoEn/actualizadoEn -> front usa createdAt/updatedAt
     createdAt: r?.creadoEn ? String(r.creadoEn) : (r?.createdAt ? String(r.createdAt) : undefined),
     updatedAt: r?.actualizadoEn ? String(r.actualizadoEn) : (r?.updatedAt ? String(r.updatedAt) : undefined),
@@ -97,6 +102,11 @@ export class PacientesService {
 
   /** Construye payload para el backend desde el modelo del FE */
   private mapToApi(p: Partial<Paciente>) {
+    const currentUser = this.authService.getCurrentUser(); // Obtenemos el usuario logueado
+    if (!currentUser) {
+      throw new Error('Usuario no logueado');
+    }
+
     const body = {
       nombres: p.nombres?.trim(),
       apellidos: p.apellidos?.trim(),
@@ -107,7 +117,7 @@ export class PacientesService {
       fechaNacimiento: this.toISO(p.fechaNacimiento ?? null),
       estado: this.normEstado(p.estado),
       alergias: p.alergias?.trim() ?? null,
-      creadoPorId: this.CREATOR_ID,
+      creadoPorId: currentUser.id, // Usamos el ID del usuario logueado
     };
     return this.pruneUndefined(body);
   }
@@ -115,8 +125,17 @@ export class PacientesService {
   // =============== API Pública (con backend real) ===============
   list(): Observable<Paciente[]> {
     if (this.useMock) return this.mock_list().pipe(delay(80));
+
+    const currentUser = this.authService.getCurrentUser(); // Obtenemos el usuario logueado
+    if (!currentUser) {
+      throw new Error('Usuario no logueado');
+    }
+
     return this.http.get<any[]>(`${this.baseUrl}/pacientes`).pipe(
-      map(rows => (rows ?? []).map(this.transformPacienteRow))
+      map(rows => (rows ?? [])
+        .map(this.transformPacienteRow)
+        .filter(paciente => paciente.creadoPorId === currentUser.id) // Filtramos por el campo creadoPorId
+      )
     );
   }
 
