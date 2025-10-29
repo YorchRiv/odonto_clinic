@@ -167,8 +167,16 @@ export class AgendaService {
 
     return this.http.get<any[]>(`${this.baseUrl}/citas`, { params: { date: fechaISO } }).pipe(
       map(rows => {
+        let filtroUsuarioId: number | undefined = undefined;
+        if (currentUser.rol === 'RECEPCIONISTA' && currentUser.refreshToken) {
+          // El campo refreshToken es el id del doctor relacionado (string), lo convertimos a int
+          filtroUsuarioId = parseInt(currentUser.refreshToken, 10);
+        } else {
+          // Aseguramos que el id sea número
+          filtroUsuarioId = typeof currentUser.id === 'string' ? parseInt(currentUser.id, 10) : currentUser.id;
+        }
         const items = (rows ?? [])
-          .filter((r: any) => r.usuarioId === currentUser.id) // Filtramos por usuarioId
+          .filter((r: any) => r.usuarioId === filtroUsuarioId)
           .filter((r: any) => this.toISO_ddMMyyyy(new Date(r?.fecha)) === fechaISO)
           .map(this.mapRowToItem);
         return this.sortByHora(items);
@@ -192,9 +200,16 @@ export class AgendaService {
       throw new Error('Usuario no logueado');
     }
 
+    let usuarioId: number;
+    if (currentUser.rol === 'RECEPCIONISTA' && currentUser.refreshToken) {
+      usuarioId = parseInt(currentUser.refreshToken, 10);
+    } else {
+      usuarioId = typeof currentUser.id === 'string' ? parseInt(currentUser.id, 10) : currentUser.id;
+    }
+
     const payload = {
       pacienteId: Number(body.pacienteId),
-      usuarioId: currentUser.id, // Usamos el ID del usuario logueado
+      usuarioId,
       fecha: this.toBackendDate(body.fechaISO, body.hora),
       hora: this.normHora(body.hora),
       motivo: body.motivo,

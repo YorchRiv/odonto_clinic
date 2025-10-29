@@ -18,8 +18,8 @@ export interface HistoriaClinica {
 export class HistoriaClinicaService {
   private http = inject(HttpClient);
   private authService = inject(AuthService); // Inyectamos el servicio de autenticación
-  //private readonly baseUrl = 'http://localhost:3000';
-  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
+  private readonly baseUrl = 'http://localhost:3000';
+  //private readonly baseUrl = 'https://odonto-clinic.onrender.com';
 
   // ===== Helpers de fecha / orden =====
   private toISO_ddMMyyyy(d: Date): string {
