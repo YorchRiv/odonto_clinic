@@ -126,18 +126,25 @@
                   <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
                 </select>
               </div>
+              <div class="col-12" *ngIf="form.rol === 'RECEPCIONISTA'">
+                <label class="form-label">Doctor Asignado *</label>
+                <select class="form-select" name="refreshToken" [(ngModel)]="form.refreshToken" required>
+                  <option value="">Seleccione un doctor…</option>
+                  <option *ngFor="let d of listaDoctores" value="{{d.id}}">{{ d.nombre }} {{ d.apellido }} ({{ d.rol }})</option>
+                </select>
+              </div>                
             </div>
 
             <div class="text-danger small mt-2" *ngIf="formError()">
               {{ formError() }}
-            </div>
-          </div>
+            </div>          
 
           <div class="modal-footer">
             <button type="button" class="btn btn-light" (click)="closeModal()">Cancelar</button>
             <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando()">
               {{ creando() ? "Guardando…" : (editandoId ? "Guardar cambios" : "Crear usuario") }}
             </button>
+          </div>
           </div>
         </form>
       </div>

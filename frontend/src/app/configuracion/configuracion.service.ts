@@ -13,6 +13,7 @@ export interface Usuario {
   rol: Rol;
   creadoEn?: string;     // ISO
   actualizadoEn?: string;// ISO
+  refreshToken?: string;
 }
 
 export type UsuarioCreate = {
@@ -21,6 +22,7 @@ export type UsuarioCreate = {
   email: string;
   password: string; // requerido al crear
   rol: Rol;
+  refreshToken?: string;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -28,8 +30,8 @@ export class UsuariosService {
   private http = inject(HttpClient);
 
   private readonly useMock = false;
-  //private readonly baseUrl = 'http://localhost:3000';
-  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
+  private readonly baseUrl = 'http://localhost:3000';
+  //private readonly baseUrl = 'https://odonto-clinic.onrender.com';
   private readonly STORAGE_KEY = 'dentalpro_usuarios_v1';
 
   // ========= Helpers (map FE -> API y utilidades) =========
@@ -54,6 +56,7 @@ export class UsuariosService {
       email: input.email?.trim(),
       password: input as any && (input as any).password ? (input as any).password : undefined,
       rol: (input.rol ?? 'RECEPCIONISTA') as Rol,
+      refreshToken: input.refreshToken ?? undefined,
     });
   }
 

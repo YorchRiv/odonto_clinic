@@ -34,6 +34,7 @@ export class ConfiguracionComponent implements OnInit {
   // Modelo form
   form: any = this.blankForm();
   roles: Rol[] = ['ADMIN', 'DOCTOR', 'RECEPCIONISTA'];
+  listaDoctores: Usuario[] = [];
 
   ngOnInit(): void { this.load(); }
 
@@ -44,6 +45,7 @@ export class ConfiguracionComponent implements OnInit {
       email: '',
       password: '', // requerido solo al crear
       rol: 'RECEPCIONISTA' as Rol,
+      refreshToken: null
     };
   }
 
@@ -58,19 +60,20 @@ export class ConfiguracionComponent implements OnInit {
   }
 
   openCrear() {
-    this.editandoId = null;
-    this.formError.set('');
-    this.form = this.blankForm();
-    this.ensureModal();
-    this.modalRef.show();
+  this.editandoId = null;
+  this.formError.set('');
+  this.form = this.blankForm();
+  this.form.refreshToken = null;
+  this.ensureModal();
+  this.modalRef.show();
   }
 
   openEditar(u: Usuario) {
-    this.editandoId = u.id;
-    this.formError.set('');
-    this.form = { nombre: u.nombre, apellido: u.apellido, email: u.email, password: '', rol: u.rol };
-    this.ensureModal();
-    this.modalRef.show();
+  this.editandoId = u.id;
+  this.formError.set('');
+  this.form = { nombre: u.nombre, apellido: u.apellido, email: u.email, password: '', rol: u.rol, refreshToken: null };
+  this.ensureModal();
+  this.modalRef.show();
   }
 
   closeModal() {
@@ -83,7 +86,11 @@ export class ConfiguracionComponent implements OnInit {
   load() {
     this.cargando.set(true);
     this.svc.list().subscribe({
-      next: arr => { this.usuarios.set(arr); this.cargando.set(false); },
+      next: arr => {
+        this.usuarios.set(arr);
+        this.listaDoctores = arr.filter(u => u.rol === 'ADMIN' || u.rol === 'DOCTOR');
+        this.cargando.set(false);
+      },
       error: () => this.cargando.set(false),
     });
   }
@@ -114,7 +121,7 @@ export class ConfiguracionComponent implements OnInit {
     this.creando.set(true);
     this.formError.set('');
 
-    const payload: Partial<UsuarioCreate & Usuario> = {
+    const payload: any = {
       nombre: this.form.nombre?.trim(),
       apellido: this.form.apellido?.trim(),
       email: this.form.email?.trim(),
@@ -122,7 +129,11 @@ export class ConfiguracionComponent implements OnInit {
     };
     if (!this.editandoId && this.form.password) payload['password'] = this.form.password.trim();
     if (this.editandoId && this.form.password) payload['password'] = this.form.password.trim(); // cambiar contraseña opcional
-
+    // Si el rol es RECEPCIONISTA, agregar refreshToken obligatorio
+    if (this.form.rol === 'RECEPCIONISTA') {
+      payload['refreshToken'] = (this.form.refreshToken && this.form.refreshToken !== '') ? String(this.form.refreshToken) : null;
+    }
+    console.log('Payload enviado:', payload);
     const obs = this.editandoId
       ? this.svc.update(this.editandoId, payload)
       : this.svc.create(payload as UsuarioCreate);

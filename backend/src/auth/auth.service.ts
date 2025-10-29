@@ -31,6 +31,7 @@ export class AuthService {
         nombre: registerDto.nombre,
         apellido: registerDto.apellido,
         rol: registerDto.rol as 'ADMIN' | 'DOCTOR' | 'RECEPCIONISTA',
+        refreshToken: registerDto.refreshToken ?? null,
       },
     });
 

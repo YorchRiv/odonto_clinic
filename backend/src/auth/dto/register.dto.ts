@@ -24,4 +24,8 @@ export class RegisterDto {
 
   @IsEnum(Rol, { message: 'El rol debe ser ADMIN, DOCTOR o RECEPCIONISTA' })
   rol: Rol;
+
+  // Campo opcional para refreshToken
+  @IsString()
+  refreshToken?: string | null;
 }
