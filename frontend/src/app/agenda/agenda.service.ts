@@ -41,8 +41,8 @@ type PacienteRow = {
 export class AgendaService {
   private http = inject(HttpClient);
   private authService = inject(AuthService); // Inyectamos el servicio de autenticación
-  private readonly baseUrl = 'http://localhost:3000';
-  //private readonly baseUrl = 'https://odonto-clinic.onrender.com';
+  //private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
 
   // ================== Helpers de fecha y mapeos ==================
 

@@ -20,8 +20,8 @@ interface LoggedUser {
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
-  //private readonly baseUrl = 'https://odonto-clinic.onrender.com';
-  private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
+  //private readonly baseUrl = 'http://localhost:3000';
 
   login(email: string, password: string): Observable<LoginResponse> {
     return this.http

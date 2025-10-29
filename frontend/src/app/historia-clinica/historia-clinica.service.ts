@@ -18,8 +18,8 @@ export interface HistoriaClinica {
 export class HistoriaClinicaService {
   private http = inject(HttpClient);
   private authService = inject(AuthService); // Inyectamos el servicio de autenticación
-  private readonly baseUrl = 'http://localhost:3000';
-  //private readonly baseUrl = 'https://odonto-clinic.onrender.com';
+  //private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
 
   // ===== Helpers de fecha / orden =====
   private toISO_ddMMyyyy(d: Date): string {
@@ -99,9 +99,15 @@ export class HistoriaClinicaService {
   // =============== API Pública ===============
   /** Carga paciente + citas reales para ese paciente (mantiene tu diseño) */
   getHistoriaClinica(pacienteId: number | string): Observable<HistoriaClinica> {
-    const currentUser = this.authService.getCurrentUser(); // Obtenemos el usuario logueado
+    const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       throw new Error('Usuario no logueado');
+    }
+
+    // Determinar el id del doctor relacionado si el usuario es recepcionista
+    let doctorId: string | number = currentUser.id;
+    if (currentUser.rol === 'RECEPCIONISTA' && currentUser.refreshToken) {
+      doctorId = currentUser.refreshToken;
     }
 
     return this.resolvePacienteId(pacienteId).pipe(
@@ -111,7 +117,8 @@ export class HistoriaClinicaService {
           .pipe(
             map(this.mapPaciente),
             map(paciente => {
-              if (paciente.creadoPorId !== currentUser.id) {
+              // Solo mostrar si el paciente fue creado por el doctor relacionado
+              if (String(paciente.creadoPorId) !== String(doctorId)) {
                 throw new Error('PACIENTE_NO_AUTORIZADO');
               }
               return paciente;
@@ -129,7 +136,9 @@ export class HistoriaClinicaService {
                 );
               }
               return of(rows.filter(r => Number(r?.pacienteId) === idNum));
-            })
+            }),
+            // Filtrar las citas por el doctor relacionado
+            map(citas => (citas ?? []).filter(r => String(r.usuarioId) === String(doctorId)))
           );
 
         return forkJoin({ paciente: paciente$, citasRows: citas$ });
@@ -169,6 +178,12 @@ export class HistoriaClinicaService {
       throw new Error('Usuario no logueado');
     }
 
+    // Determinar el id del doctor relacionado si el usuario es recepcionista
+    let doctorId: string | number = currentUser.id;
+    if (currentUser.rol === 'RECEPCIONISTA' && currentUser.refreshToken) {
+      doctorId = currentUser.refreshToken;
+    }
+
     const q = (query ?? '').trim();
     if (!q) return of([]);
 
@@ -177,7 +192,7 @@ export class HistoriaClinicaService {
         if (Array.isArray(list) && list.length) {
           return of(list
             .map(this.mapPaciente)
-            .filter(paciente => paciente.creadoPorId === currentUser.id) // Filtramos por creadoPorId
+            .filter(paciente => String(paciente.creadoPorId) === String(doctorId)) // Filtramos por creadoPorId
           );
         }
         // Fallback: traer todos y filtrar local
@@ -192,7 +207,7 @@ export class HistoriaClinicaService {
                 (p.dpi ?? '').toLowerCase().includes(ql)
               )
               .map(this.mapPaciente)
-              .filter(paciente => paciente.creadoPorId === currentUser.id) // Filtramos por creadoPorId
+              .filter(paciente => String(paciente.creadoPorId) === String(doctorId)) // Filtramos por creadoPorId
               .slice(0, 20);
           })
         );
