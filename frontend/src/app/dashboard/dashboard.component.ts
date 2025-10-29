@@ -17,10 +17,24 @@ export class DashboardComponent implements OnInit {
   private agendaSrv = inject(AgendaService);
   private pacientesSrv = inject(PacientesService);
 
-  // ===== Próximas citas (hoy) =====
-  citasHoy = signal<CitaItem[]>([]);
-  citasHoyCount = computed(() => this.citasHoy().filter(c => c.status !== 'DISPONIBLE').length);
-  citasHoyTop = computed(() => this.citasHoy()); // muestra todas las citas
+  // ======= Citas por fecha (filtro) =======
+  citasFecha = signal<CitaItem[]>([]);
+  cargandoCitas = signal<boolean>(false);
+
+  // input del datepicker (yyyy-MM-dd). Inicia en HOY.
+  fechaFiltroInput = this.toDateInput(new Date());
+  // representación dd-MM-yyyy (key para API)
+  fechaFiltroKey = computed(() => this.toFechaKey(this.fechaFiltroInput));
+
+  // métricas (solo cuentan citas no-DISPONIBLE)
+  citasFechaCount = computed(() => this.citasFecha().filter(c => c.status !== 'DISPONIBLE').length);
+
+  // lista ordenada y SIN “DISPONIBLE” (solo citas reales)
+  citasFechaTop = computed(() =>
+    [...this.citasFecha()]
+      .filter(c => c.status !== 'DISPONIBLE')
+      .sort((a, b) => a.hora.localeCompare(b.hora))
+  );
 
   // ===== Pacientes (para métricas y autocompletar) =====
   pacientes = signal<Paciente[]>([]);
@@ -29,22 +43,40 @@ export class DashboardComponent implements OnInit {
   pacTotalCount     = computed(() => this.pacientes().length);
 
   ngOnInit(): void {
-    this.cargarCitasHoy();
-    this.refrescarPacientes(); // <-- carga inicial para métricas y autocomplete
+    this.cargarCitasPorFecha(this.fechaFiltroKey());
+    this.refrescarPacientes(); // métricas y autocomplete
   }
 
   private refrescarPacientes() {
     this.pacientesSrv.list().subscribe(arr => this.pacientes.set(arr));
   }
 
-  private cargarCitasHoy() {
-    this.agendaSrv.getAgendaDia(this.hoyKey()).subscribe({
+  private cargarCitasPorFecha(fechaKey: string) {
+    this.cargandoCitas.set(true);
+    this.agendaSrv.getAgendaDia(fechaKey).subscribe({
       next: (res) => {
         const arr: CitaItem[] = res.items ?? [];
-        this.citasHoy.set([...arr].sort((a: CitaItem, b: CitaItem) => a.hora.localeCompare(b.hora)));
+        this.citasFecha.set(arr);
+        this.cargandoCitas.set(false);
       },
-      error: () => this.citasHoy.set([])
+      error: () => {
+        this.citasFecha.set([]);
+        this.cargandoCitas.set(false);
+      }
     });
+  }
+
+  // Al cambiar el datepicker
+  onFechaFiltroChange(val: string) {
+    this.fechaFiltroInput = val;
+    this.cargarCitasPorFecha(this.toFechaKey(val));
+  }
+
+  // Botón “Hoy”
+  goHoy() {
+    const hoy = new Date();
+    this.fechaFiltroInput = this.toDateInput(hoy);
+    this.cargarCitasPorFecha(this.hoyKey());
   }
 
   // ===== Helpers de UI =====
@@ -54,6 +86,14 @@ export class DashboardComponent implements OnInit {
     const mm = String(d.getMonth()+1).padStart(2,'0');
     const yy = d.getFullYear();
     return `${dd}-${mm}-${yy}`; // dd-MM-yyyy
+  }
+
+  private toDateInput(d: Date): string {
+    return [
+      d.getFullYear(),
+      String(d.getMonth()+1).padStart(2,'0'),
+      String(d.getDate()).padStart(2,'0')
+    ].join('-'); // yyyy-MM-dd
   }
 
   horaAMPM(hhmm: string): string {
@@ -142,12 +182,8 @@ export class DashboardComponent implements OnInit {
     this.pacienteError.set('');
     this.form = { hora: '', motivo: '', notas: '' };
 
-    const d = new Date();
-    this.dateInput = [
-      d.getFullYear(),
-      String(d.getMonth()+1).padStart(2,'0'),
-      String(d.getDate()).padStart(2,'0')
-    ].join('-');
+    // prellenar con fecha del filtro actual
+    this.dateInput = this.fechaFiltroInput;
 
     this.pacienteTexto.set('');
     this.pacienteSeleccionadoId.set(null);
@@ -196,7 +232,11 @@ export class DashboardComponent implements OnInit {
       next: () => {
         this.creando.set(false);
         this.closeNuevaCita();
-        if (fechaISO === this.hoyKey()) this.cargarCitasHoy();
+
+        // Si la nueva cita coincide con la fecha seleccionada, refresca
+        if (fechaISO === this.fechaFiltroKey()) {
+          this.cargarCitasPorFecha(fechaISO);
+        }
       },
       error: (err:any) => {
         this.creando.set(false);
