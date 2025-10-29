@@ -11,6 +11,8 @@ interface LoginResponse {
 
 interface LoggedUser {
   id: string;
+  rol?: string;
+  refreshToken?: string;
   // Otros campos relevantes del usuario logueado
 }
 
@@ -64,7 +66,12 @@ export class AuthService {
     if (!raw) return null;
     try {
       const parsed = JSON.parse(raw);
-      return parsed?.user ?? null;
+      const user = parsed?.user ?? null;
+      if (user && typeof user.refreshToken !== 'undefined') {
+        // Forzar a string para compatibilidad
+        user.refreshToken = String(user.refreshToken);
+      }
+      return user;
     } catch {
       return null;
     }

@@ -33,8 +33,8 @@ export class PacientesService {
   private authService = inject(AuthService); // Inyectamos el servicio de autenticación
 
   private readonly useMock = false; // <- deja en false porque ya conectaste backend
-  //private readonly baseUrl = 'http://localhost:3000';
-  private readonly baseUrl = 'https://odonto-clinic.onrender.com';
+  private readonly baseUrl = 'http://localhost:3000';
+  //private readonly baseUrl = 'https://odonto-clinic.onrender.com';
   private readonly STORAGE_KEY = 'dentalpro_pacientes_v1';
 
   /** ⬇️ Mientras no hay login/JWT, usa el usuario creado por Postman */
@@ -102,9 +102,18 @@ export class PacientesService {
 
   /** Construye payload para el backend desde el modelo del FE */
   private mapToApi(p: Partial<Paciente>) {
-    const currentUser = this.authService.getCurrentUser(); // Obtenemos el usuario logueado
+    const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       throw new Error('Usuario no logueado');
+    }
+
+    let creadoPorId: string | number = currentUser.id;
+    if (currentUser.rol === 'RECEPCIONISTA' && typeof currentUser.refreshToken === 'string') {
+      // Si es recepcionista, el creadoPorId debe ser el id del doctor asignado (como número)
+      creadoPorId = parseInt(currentUser.refreshToken, 10);
+      console.log('[PACIENTES] recepcionista, refreshToken:', currentUser.refreshToken, '-> creadoPorId:', creadoPorId);
+    } else {
+      console.log('[PACIENTES] usuario:', currentUser.id, 'rol:', currentUser.rol, '-> creadoPorId:', creadoPorId);
     }
 
     const body = {
@@ -117,7 +126,7 @@ export class PacientesService {
       fechaNacimiento: this.toISO(p.fechaNacimiento ?? null),
       estado: this.normEstado(p.estado),
       alergias: p.alergias?.trim() ?? null,
-      creadoPorId: currentUser.id, // Usamos el ID del usuario logueado
+      creadoPorId,
     };
     return this.pruneUndefined(body);
   }
@@ -126,16 +135,23 @@ export class PacientesService {
   list(): Observable<Paciente[]> {
     if (this.useMock) return this.mock_list().pipe(delay(80));
 
-    const currentUser = this.authService.getCurrentUser(); // Obtenemos el usuario logueado
+    const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       throw new Error('Usuario no logueado');
     }
 
     return this.http.get<any[]>(`${this.baseUrl}/pacientes`).pipe(
-      map(rows => (rows ?? [])
-        .map(this.transformPacienteRow)
-        .filter(paciente => paciente.creadoPorId === currentUser.id) // Filtramos por el campo creadoPorId
-      )
+      map(rows => {
+        const pacientes = (rows ?? []).map(this.transformPacienteRow);
+        if (currentUser.rol === 'RECEPCIONISTA' && typeof currentUser.refreshToken === 'string') {
+          // El id del doctor asignado está en refreshToken (como string)
+          const doctorId = String(parseInt(currentUser.refreshToken, 10));
+          // Mostrar pacientes creados por el doctor relacionado o por la propia recepcionista
+          return pacientes.filter(p => String(p.creadoPorId) === doctorId || String(p.creadoPorId) === String(currentUser.id));
+        }
+        // ADMIN y DOCTOR ven los pacientes que crearon
+        return pacientes.filter(p => String(p.creadoPorId) === String(currentUser.id));
+      })
     );
   }
 

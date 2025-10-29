@@ -79,6 +79,7 @@ export class AuthService {
           nombre: user.nombre,
           apellido: user.apellido,
           rol: user.rol,
+          refreshToken: user.refreshToken,
         },
         message: 'Inicio de sesión exitoso'
       };
