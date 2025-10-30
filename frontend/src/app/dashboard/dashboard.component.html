@@ -6,7 +6,7 @@
   <div class="col-md-3">
     <div class="card text-white border-0 shadow-sm metric-citashoy">
       <div class="card-body">
-        <h6 class="mb-1">Citas en la fecha</h6>
+        <h6 class="mb-1">Total citas </h6>
         <div class="fs-4 fw-bold">{{ citasFechaCount() }}</div>
       </div>
     </div>
@@ -68,7 +68,7 @@
           <input
             type="date"
             class="form-control form-control-sm w-auto"
-            [ngModel]="fechaFiltroInput"
+            [ngModel]="fechaFiltroInput()"
             (ngModelChange)="onFechaFiltroChange($event)"
             [ngModelOptions]="{standalone: true}"
           />

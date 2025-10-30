@@ -21,10 +21,11 @@ export class DashboardComponent implements OnInit {
   citasFecha = signal<CitaItem[]>([]);
   cargandoCitas = signal<boolean>(false);
 
-  // input del datepicker (yyyy-MM-dd). Inicia en HOY.
-  fechaFiltroInput = this.toDateInput(new Date());
-  // representación dd-MM-yyyy (key para API)
-  fechaFiltroKey = computed(() => this.toFechaKey(this.fechaFiltroInput));
+  // input del datepicker (yyyy-MM-dd) AHORA como signal
+  fechaFiltroInput = signal<string>(this.toDateInput(new Date()));
+
+  // representación dd-MM-yyyy (key para API) AHORA depende del signal
+  fechaFiltroKey = computed(() => this.toFechaKey(this.fechaFiltroInput()));
 
   // métricas (solo cuentan citas no-DISPONIBLE)
   citasFechaCount = computed(() => this.citasFecha().filter(c => c.status !== 'DISPONIBLE').length);
@@ -68,14 +69,15 @@ export class DashboardComponent implements OnInit {
 
   // Al cambiar el datepicker
   onFechaFiltroChange(val: string) {
-    this.fechaFiltroInput = val;
+    this.fechaFiltroInput.set(val);
     this.cargarCitasPorFecha(this.toFechaKey(val));
   }
 
   // Botón “Hoy”
   goHoy() {
     const hoy = new Date();
-    this.fechaFiltroInput = this.toDateInput(hoy);
+    const ymd = this.toDateInput(hoy);
+    this.fechaFiltroInput.set(ymd);
     this.cargarCitasPorFecha(this.hoyKey());
   }
 
@@ -182,8 +184,8 @@ export class DashboardComponent implements OnInit {
     this.pacienteError.set('');
     this.form = { hora: '', motivo: '', notas: '' };
 
-    // prellenar con fecha del filtro actual
-    this.dateInput = this.fechaFiltroInput;
+    // prellenar con fecha del filtro actual (lee del signal)
+    this.dateInput = this.fechaFiltroInput();
 
     this.pacienteTexto.set('');
     this.pacienteSeleccionadoId.set(null);
@@ -219,7 +221,7 @@ export class DashboardComponent implements OnInit {
 
     this.creando.set(true);
     this.formError.set('');
-    const fechaISO = this.toFechaKey(this.dateInput);
+    const fechaISO = this.toFechaKey(this.dateInput); // dd-MM-yyyy
 
     this.agendaSrv.crearCita({
       fechaISO,
