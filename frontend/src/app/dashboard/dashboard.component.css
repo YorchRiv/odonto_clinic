@@ -10,3 +10,26 @@
   max-height: 220px;
   overflow: auto;
 }
+
+/* Encabezado con logo */
+.dash-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.dash-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.dash-titles small {
+  display: block;
+  margin-top: 2px;
+}
+
+@media (min-width: 768px) {
+  .dash-logo { width: 56px; height: 56px; }
+}
