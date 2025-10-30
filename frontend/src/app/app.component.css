@@ -12,3 +12,16 @@
 /* Deja que el sidebar crezca con el contenido (reemplaza vh-100) */
 #sidebar { height: auto; }
 
+/* ===== Logo del navbar ===== */
+.navbar-logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  filter: brightness(0) invert(1); /* asegura que el logo blanco sea visible sobre fondo azul */
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+}
+
