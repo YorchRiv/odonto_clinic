@@ -104,56 +104,36 @@ export class ReportesComponent implements OnInit {
   }
 
   // ===== Export CSV =====
- // ===== Export CSV =====
-exportCSV() {
-  const cols = this.columnas();
-  const rows = this.filas();
-  if (!cols.length) return;
+  exportCSV() {
+    const cols = this.columnas();
+    const rows = this.filas();
+    if (!cols.length) return;
 
-  // 1) Detectar columnas que deben tratarse SIEMPRE como texto (no perder ceros a la izquierda)
-  const isTextCol = (col: string) =>
-    /^(id|tel[eé]fono|dpi)$/i.test(col.trim());
+    const isTextCol = (col: string) =>
+      /^(id|tel[eé]fono|dpi)$/i.test(col.trim());
 
-  // 2) Sanitizar contra CSV injection y normalizar saltos de línea
-  const sanitizeCell = (raw: any, col: string) => {
-    if (raw === null || raw === undefined) return '';
-    let s = String(raw);
+    const sanitizeCell = (raw: any, col: string) => {
+      if (raw === null || raw === undefined) return '';
+      let s = String(raw);
+      s = s.replace(/\r?\n/g, ' ');
+      if (s === '—') s = '';
+      if (/^[=+\-@]/.test(s)) s = "'" + s;
+      if (isTextCol(col)) s = '\t' + s;
+      s = s.replace(/"/g, '""');
+      return `"${s}"`;
+    };
 
-    // quita saltos de línea que rompen filas (si quieres conservarlos, comenta la línea siguiente)
-    s = s.replace(/\r?\n/g, ' ');
+    const head = cols.map(c => sanitizeCell(c, c)).join(',');
+    const body = rows
+      .map(r => cols.map(c => sanitizeCell(r[c], c)).join(','))
+      .join('\r\n');
 
-    // Excel a veces muestra "—" raro; lo normalizamos a guion si lo prefieres:
-    if (s === '—') s = ''; // o s = '-' si quieres guion
+    const bom = '\uFEFF';
+    const csv = bom + head + '\r\n' + body;
 
-    // Si la celda empieza con =, +, -, @ => posible fórmula maliciosa. Prefijamos una comilla.
-    if (/^[=+\-@]/.test(s)) s = "'" + s;
-
-    // Forzar texto: agregamos un tab inicial (Excel respeta como texto sin mostrar el tab)
-    if (isTextCol(col)) s = '\t' + s;
-
-    // Doblar comillas para CSV
-    s = s.replace(/"/g, '""');
-
-    // Envolver en comillas
-    return `"${s}"`;
-  };
-
-  // 3) Encabezado
-  const head = cols.map(c => sanitizeCell(c, c)).join(',');
-
-  // 4) Filas
-  const body = rows
-    .map(r => cols.map(c => sanitizeCell(r[c], c)).join(','))
-    .join('\r\n');
-
-  // 5) BOM + CRLF para Excel (acentos OK y filas correctas)
-  const bom = '\uFEFF';
-  const csv = bom + head + '\r\n' + body;
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  saveAs(blob, `${this.slug(this.tituloReporte())}.csv`);
-}
-
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    saveAs(blob, `${this.slug(this.tituloReporte())}.csv`);
+  }
 
   // ===== Export Excel =====
   async exportExcel() {
@@ -171,41 +151,124 @@ exportCSV() {
     );
   }
 
-  // ===== Export PDF (con jspdf-autotable) =====
-  exportPDF() {
-    const cols = this.columnas(); const rows = this.filas(); if (!cols.length) return;
+// ===== Export PDF (con jspdf-autotable) =====
+exportPDF() {
+  const cols = this.columnas(); const rows = this.filas(); if (!cols.length) return;
 
-    // Forzar un ancho pequeño para la columna ID (~8 dígitos)
-    const idIndex = cols.findIndex(c => c.toLowerCase() === 'id');
-    const landscape = cols.length > 7;
-    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' });
-    const margin = 36; const title = this.tituloReporte();
+  const idIndex = cols.findIndex(c => c.toLowerCase() === 'id');
+  const landscape = cols.length > 7;
 
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.text(title, margin, margin);
+  const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' });
+  const margin = 36;
+  const pageWidth = doc.internal.pageSize.getWidth();
 
-    const columnStyles: Record<number, any> = {};
-    if (idIndex >= 0) columnStyles[idIndex] = { cellWidth: 50 };
+  const titulo = this.tituloReporte();
+  const fechaImpresion = this.formatFechaHora(new Date());
+  const leyenda = `Impresión: ${fechaImpresion}`;
 
-    autoTable(doc, {
-      startY: margin + 10,
-      head: [cols],
-      body: rows.map(r => cols.map(c => (r[c] ?? '').toString())),
-      margin: { left: margin, right: margin },
-      styles: { font: 'helvetica', fontSize: 9, cellPadding: 4, overflow: 'linebreak', valign: 'top', lineWidth: 0.2 },
-      headStyles: { fillColor: [247, 241, 255], textColor: 20, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [250, 250, 250] },
-      columnStyles,
-      didDrawPage: (data) => {
-        if (data.pageNumber > 1) { doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.text(title, margin, margin); }
-        const pageWidth = doc.internal.pageSize.getWidth(); const pageHeight = doc.internal.pageSize.getHeight();
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-        doc.text(`Página ${data.pageNumber}`, pageWidth - margin, pageHeight - 12, { align: 'right' });
-      },
-    });
+  // Decisiones de layout del encabezado
+  let titleFS = 14;    // tamaño base del título
+  let subFS   = 9;     // tamaño base de la leyenda
+  const gap   = 10;    // espacio entre título y leyenda en la misma línea
+  const maxW  = pageWidth - margin * 2;
 
-    doc.save(`${this.slug(title)}.pdf`);
+  // Medir y decidir si caben en la misma línea
+  doc.setFont('helvetica', 'bold');  doc.setFontSize(titleFS);
+  let titleW = doc.getTextWidth(titulo);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(subFS);
+  let leyendaW = doc.getTextWidth(leyenda);
+
+  // Intento 1: mismo renglón
+  let mismaLinea = (titleW + gap + leyendaW) <= maxW;
+
+  // Intento 2: si no cabe, bajar un poco las fuentes y volver a medir
+  if (!mismaLinea) {
+    titleFS = 12;
+    subFS   = 8;
+    doc.setFont('helvetica', 'bold');  doc.setFontSize(titleFS);
+    titleW = doc.getTextWidth(titulo);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(subFS);
+    leyendaW = doc.getTextWidth(leyenda);
+    mismaLinea = (titleW + gap + leyendaW) <= maxW;
   }
 
+  // Si aún no cabe, leyenda va en segunda línea
+  const leyendaSegundaLinea = !mismaLinea;
+
+  // Dibuja encabezado y devuelve la altura usada
+  const drawHeader = () => {
+    let y = margin;
+
+    // Título (con posible wrap si es muy largo)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(titleFS);
+    const tituloSplit = doc.splitTextToSize(titulo, maxW - (leyendaSegundaLinea ? 0 : leyendaW + gap));
+    doc.text(tituloSplit, margin, y);
+
+    if (leyendaSegundaLinea) {
+      // Leyenda en segunda línea, alineada a la derecha
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(subFS);
+      y += 14; // salto a segunda línea del encabezado
+      doc.text(leyenda, pageWidth - margin, y, { align: 'right' });
+    } else {
+      // Misma línea, a la derecha
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(subFS);
+      doc.text(leyenda, pageWidth - margin, margin, { align: 'right' });
+    }
+
+    // Altura total ocupada por el encabezado
+    const headerHeight = leyendaSegundaLinea ? 22 : 14;
+    return headerHeight;
+  };
+
+  const headerHeight = drawHeader();
+
+  const marginTopForTable = margin + headerHeight + 8;
+
+  const columnStyles: Record<number, any> = {};
+  if (idIndex >= 0) columnStyles[idIndex] = { cellWidth: 50 };
+
+  autoTable(doc, {
+    startY: marginTopForTable,
+    head: [cols],
+    body: rows.map(r => cols.map(c => (r[c] ?? '').toString())),
+    margin: { left: margin, right: margin },
+    styles: { font: 'helvetica', fontSize: 9, cellPadding: 4, overflow: 'linebreak', valign: 'top', lineWidth: 0.2 },
+    headStyles: { fillColor: [247, 241, 255], textColor: 20, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [250, 250, 250] },
+    columnStyles,
+    didDrawPage: (data) => {
+      if (data.pageNumber > 1) {
+        // Redibujar encabezado en páginas siguientes con la misma lógica
+        drawHeader();
+      }
+      // Pie de página
+      const ph = doc.internal.pageSize.getHeight();
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+      doc.text(`Página ${data.pageNumber}`, pageWidth - margin, ph - 12, { align: 'right' });
+    },
+  });
+
+  doc.save(`${this.slug(titulo)}.pdf`);
+}
+
+
+
   // ===== Utils =====
-  private slug(s: string) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
+  private slug(s: string) {
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+
+  // dd/mm/yyyy hh:mm a. m./p. m. (zona local del navegador)
+  private formatFechaHora(d: Date) {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dd = pad(d.getDate());
+    const mm = pad(d.getMonth() + 1);
+    const yyyy = d.getFullYear();
+    let hh = d.getHours();
+    const min = pad(d.getMinutes());
+    const ampm = hh >= 12 ? 'p. m.' : 'a. m.';
+    hh = hh % 12; if (hh === 0) hh = 12;
+    const hhStr = pad(hh);
+    return `${dd}/${mm}/${yyyy} ${hhStr}:${min} ${ampm}`;
+  }
 }
