@@ -209,8 +209,15 @@ export class PacientesComponent implements OnInit {
       return;
     }
 
-    if (!confirm(`Eliminar a ${p.nombres} ${p.apellidos}?`)) return;
-    this.svc.delete(p.id).subscribe(() => this.load());
+    this.svc.checkHasCitas(p.id).subscribe(hasCitas => {
+      if (hasCitas) {
+        alert('No se puede eliminar el paciente porque tiene citas registradas');
+        return;
+      }
+
+      if (!confirm(`Eliminar a ${p.nombres} ${p.apellidos}?`)) return;
+      this.svc.delete(p.id).subscribe(() => this.load());
+    });
   }
 
   // Helpers UI

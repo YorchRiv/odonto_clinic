@@ -32,6 +32,12 @@ export class PacientesService {
   private http = inject(HttpClient);
   private authService = inject(AuthService); // Inyectamos el servicio de autenticación
 
+  checkHasCitas(id: string): Observable<boolean> {
+    return this.http.get<any[]>(`${this.baseUrl}/citas`).pipe(
+      map(citas => citas.some(cita => String(cita.pacienteId) === id))
+    );
+  }
+
   private readonly useMock = false; // <- deja en false porque ya conectaste backend
   //private readonly baseUrl = 'http://localhost:3000';
   private readonly baseUrl = 'https://odonto-clinic.onrender.com';
