@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { AgendaDia, AgendaService, CitaItem } from './agenda.service';
 import { PacientesService, Paciente } from '../pacientes/pacientes.service'; // ajusta ruta si es necesario
+import { AuthService } from '../core/auth.service';
 
 declare var bootstrap: any;
 
@@ -42,6 +43,7 @@ type FiltroStatus =
 export class AgendaComponent implements OnInit {
   private agendaSrv = inject(AgendaService);
   private pacSvc = inject(PacientesService);
+  private auth = inject(AuthService);
 
   // ===== Calendario =====
   hoy = new Date();
@@ -371,6 +373,12 @@ export class AgendaComponent implements OnInit {
   }
 
   eliminarCita(id: string) {
+    const current = this.auth.getCurrentUser();
+    if (current?.rol === 'RECEPCIONISTA') {
+      alert('No tiene permiso para eliminar');
+      return;
+    }
+
     const fechaKey = this.formateaFechaKey(this.seleccionado());
     this.agendaSrv
       .eliminarCita(fechaKey, id)

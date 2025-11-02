@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal, ViewChild, ElementRef } from '@angular/core';
+import { AuthService } from '../core/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -18,6 +19,7 @@ type FiltroPac = 'TODOS' | 'ACTIVOS' | 'INACTIVOS';
 export class PacientesComponent implements OnInit {
   private svc = inject(PacientesService);
   private router = inject(Router);
+  private auth = inject(AuthService);
 
   // UI / estado
   cargando = signal(false);
@@ -201,6 +203,12 @@ export class PacientesComponent implements OnInit {
   }
 
   eliminar(p: Paciente) {
+    const current = this.auth.getCurrentUser();
+    if (current?.rol === 'RECEPCIONISTA') {
+      alert('No tiene permiso para eliminar');
+      return;
+    }
+
     if (!confirm(`Eliminar a ${p.nombres} ${p.apellidos}?`)) return;
     this.svc.delete(p.id).subscribe(() => this.load());
   }
