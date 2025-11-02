@@ -2,6 +2,7 @@ import { Component, OnInit, computed, ElementRef, ViewChild, signal, inject } fr
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { UsuariosService, Usuario, UsuarioCreate, Rol } from './configuracion.service';
+import { AuthService } from '../core/auth.service';
 
 
 declare var bootstrap: any;
@@ -17,6 +18,7 @@ type FiltroRol = 'TODOS' | Rol;
 })
 export class ConfiguracionComponent implements OnInit {
   private svc = inject(UsuariosService);
+  private auth = inject(AuthService);
 
   // Estado UI
   cargando = signal(false);
@@ -35,6 +37,8 @@ export class ConfiguracionComponent implements OnInit {
   form: any = this.blankForm();
   roles: Rol[] = ['ADMIN', 'DOCTOR', 'RECEPCIONISTA'];
   listaDoctores: Usuario[] = [];
+  // Usuario autenticado (puede venir desde localStorage via AuthService)
+  currentUser = signal<Usuario | null>(null);
 
   ngOnInit(): void { this.load(); }
 
@@ -85,8 +89,21 @@ export class ConfiguracionComponent implements OnInit {
   // Cargar lista
   load() {
     this.cargando.set(true);
+    // Obtener info del usuario logueado (si existe)
+    const me = this.auth.getCurrentUser();
+    if (me) {
+      // Guardar como señal (si el objeto no contiene campos como nombre/apellido, seguiremos usando el listado del backend)
+      this.currentUser.set(me as any);
+    }
+
     this.svc.list().subscribe({
       next: arr => {
+        // Si el usuario no es ADMIN, restringimos la lista a sólo el usuario logueado
+        if (me && me.rol && me.rol !== 'ADMIN') {
+          const myId = String(me.id);
+          arr = arr.filter(u => String(u.id) === myId);
+        }
+
         this.usuarios.set(arr);
         this.listaDoctores = arr.filter(u => u.rol === 'ADMIN' || u.rol === 'DOCTOR');
         this.cargando.set(false);
