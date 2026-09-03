@@ -14,6 +14,7 @@ export interface Usuario {
   creadoEn?: string;     // ISO
   actualizadoEn?: string;// ISO
   refreshToken?: string;
+  activo?: boolean;
 }
 
 export type UsuarioCreate = {
@@ -57,6 +58,7 @@ export class UsuariosService {
       password: input as any && (input as any).password ? (input as any).password : undefined,
       rol: (input.rol ?? 'RECEPCIONISTA') as Rol,
       refreshToken: input.refreshToken ?? undefined,
+      activo: input.activo,
     });
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, computed, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -51,7 +51,10 @@ export class ReportesComponent implements OnInit {
 
   // ===== Ciclo de vida =====
   ngOnInit(): void {
-    this.pacSvc.list().subscribe(arr => this.pacientes.set(arr));
+    this.pacSvc.list().subscribe(arr => {
+      this.pacientes.set(arr);
+      this.generar();
+    });
 
     const hoy = new Date();
     const y = hoy.getFullYear();
@@ -60,6 +63,24 @@ export class ReportesComponent implements OnInit {
     const fecha = `${y}-${m}-${d}`;
     this.fechaDesde.set(fecha);
     this.fechaHasta.set(fecha);
+  }
+
+  pacientesActivos = computed(() => this.pacientes().filter(p => p.estado === 'ACTIVO').length);
+  pacientesInactivos = computed(() => this.pacientes().filter(p => p.estado === 'INACTIVO').length);
+
+  isStatusColumn(column: string): boolean {
+    return /estado/i.test(column);
+  }
+
+  statusClass(value: unknown): string {
+    const normalized = String(value ?? '').toLowerCase();
+    if (normalized.includes('activo') && !normalized.includes('inactivo')) return 'status-pill activo';
+    if (normalized.includes('inactivo') || normalized.includes('cancel')) return 'status-pill inactivo';
+    if (normalized.includes('confirm')) return 'status-pill confirmada';
+    if (normalized.includes('pendiente')) return 'status-pill pendiente';
+    if (normalized.includes('nueva')) return 'status-pill nueva';
+    if (normalized.includes('final')) return 'status-pill finalizada';
+    return 'status-pill';
   }
 
   // ===== Autocomplete paciente =====

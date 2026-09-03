@@ -37,8 +37,8 @@ export class ReportesService {
   private agendaSvc = inject(AgendaService);
   private historiaSvc = inject(HistoriaClinicaService);
 
-  /** Cambia a false cuando conectes el backend */
-  private readonly useMock = true;
+  /** El backend actual no expone /reportes; consolidamos datos reales en el cliente. */
+  private readonly useClientAggregation = true;
   private readonly baseUrl = 'http://localhost:3000';
 
   /** ================== API pública (HTTP REAL + MOCK) ================== */
@@ -48,7 +48,7 @@ export class ReportesService {
    *   POST /reportes  { tipo, subtipo, ... }
    */
   generarReporte(filtro: ReporteFiltro): Observable<ReporteResultado> {
-    if (!this.useMock) {
+    if (!this.useClientAggregation) {
       // === HTTP REAL (endpoint unificado) ===
       return this.http.post<ReporteResultado>(`${this.baseUrl}/reportes`, filtro);
     }
@@ -59,7 +59,7 @@ export class ReportesService {
   /** Métodos específicos por tipo/subtipo (útiles si separas endpoints en tu backend) */
   // ---------- PACIENTES ----------
   pacientesGeneral(): Observable<ReporteResultado> {
-    if (!this.useMock) {
+    if (!this.useClientAggregation) {
       // === HTTP REAL ===  POST /reportes/pacientes { subtipo: 'GENERAL' }
       return this.http.post<ReporteResultado>(`${this.baseUrl}/reportes/pacientes`, { subtipo: 'GENERAL' });
     }
@@ -67,7 +67,7 @@ export class ReportesService {
   }
 
   pacientesIndividual(pacienteId: string): Observable<ReporteResultado> {
-    if (!this.useMock) {
+    if (!this.useClientAggregation) {
       // === HTTP REAL ===  POST /reportes/pacientes { subtipo: 'INDIVIDUAL', pacienteId }
       return this.http.post<ReporteResultado>(`${this.baseUrl}/reportes/pacientes`, { subtipo: 'INDIVIDUAL', pacienteId });
     }
@@ -76,7 +76,7 @@ export class ReportesService {
 
   // ---------- CITAS ----------
   citasDiarias(fecha: string, estado: EstadoCita = 'TODAS'): Observable<ReporteResultado> {
-    if (!this.useMock) {
+    if (!this.useClientAggregation) {
       // === HTTP REAL ===  POST /reportes/citas { subtipo:'DIARIO', desde:fecha, hasta:fecha, estado }
       return this.http.post<ReporteResultado>(`${this.baseUrl}/reportes/citas`, { subtipo: 'DIARIO', desde: fecha, hasta: fecha, estado });
     }
@@ -84,7 +84,7 @@ export class ReportesService {
   }
 
   citasSemanales(desde: string, hasta?: string, estado: EstadoCita = 'TODAS'): Observable<ReporteResultado> {
-    if (!this.useMock) {
+    if (!this.useClientAggregation) {
       // === HTTP REAL ===  POST /reportes/citas { subtipo:'SEMANAL', desde, hasta, estado }
       return this.http.post<ReporteResultado>(`${this.baseUrl}/reportes/citas`, { subtipo: 'SEMANAL', desde, hasta, estado });
     }
@@ -92,7 +92,7 @@ export class ReportesService {
   }
 
   citasMensuales(enMesDe: string, estado: EstadoCita = 'TODAS'): Observable<ReporteResultado> {
-    if (!this.useMock) {
+    if (!this.useClientAggregation) {
       // === HTTP REAL ===  POST /reportes/citas { subtipo:'MENSUAL', desde:enMesDe, estado }  // el backend ignora 'hasta'
       return this.http.post<ReporteResultado>(`${this.baseUrl}/reportes/citas`, { subtipo: 'MENSUAL', desde: enMesDe, estado });
     }
@@ -101,7 +101,7 @@ export class ReportesService {
 
   // ---------- CLÍNICOS ----------
   clinicoHistorialIndividual(pacienteId: string): Observable<ReporteResultado> {
-    if (!this.useMock) {
+    if (!this.useClientAggregation) {
       // === HTTP REAL ===  POST /reportes/clinicos/historial { pacienteId }
       return this.http.post<ReporteResultado>(`${this.baseUrl}/reportes/clinicos/historial`, { pacienteId });
     }

@@ -1,43 +1,78 @@
-<div class="login-wrapper d-flex align-items-center justify-content-center">
-  <div class="login-card shadow p-4 rounded-4">
-    <div class="text-center mb-3">
-      <i class="fa-solid fa-tooth fa-2x"></i>
-      <h1 class="h4 mt-2 mb-0">Bienvenido a <strong>DentalPro</strong></h1>
-      <small class="text-muted">Gestión odontológica sencilla y ordenada</small>
+<main class="login-page">
+  <section class="login-brand-panel">
+    <header class="login-brand-header">
+      <div class="brand-lockup">
+        <span class="brand-logo"><img src="logo.svg" alt="Logo OdontoClinic"></span>
+        <span><strong>OdontoClinic</strong><small>Dental Cloud</small></span>
+      </div>
+      <span class="operational"><i></i> Plataforma operativa</span>
+    </header>
+
+    <div class="brand-message">
+      <span class="brand-kicker"><span class="material-symbols-outlined">dentistry</span> Software odontológico profesional</span>
+      <h1>Gestión odontológica simple y organizada</h1>
+      <p>Administra pacientes, citas e historias clínicas desde un solo lugar.</p>
+
+      <div class="feature-panel">
+        <div class="feature-panel-title"><span><i></i> Flujo clínico centralizado</span><span class="secure"><span class="material-symbols-outlined">verified_user</span> Información protegida</span></div>
+        <div class="feature-grid">
+          <article><span class="feature-icon material-symbols-outlined">event_available</span><strong>Agenda inteligente</strong><small>Turnos y citas en tiempo real</small></article>
+          <article><span class="feature-icon material-symbols-outlined">groups</span><strong>Pacientes</strong><small>Expedientes clínicos centralizados</small></article>
+          <article><span class="feature-icon material-symbols-outlined">clinical_notes</span><strong>Historia digital</strong><small>Evolución y tratamientos</small></article>
+        </div>
+        <div class="encryption"><span class="material-symbols-outlined">lock</span> Sesión cifrada y acceso basado en roles</div>
+      </div>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <div class="mb-3">
-        <label class="form-label">Correo</label>
-        <input type="email" class="form-control" placeholder="tucorreo@dominio.com" formControlName="email" />
-        <div class="form-text text-danger" *ngIf="form.controls.email.touched && form.controls.email.invalid">
-          Ingresa un correo válido.
-        </div>
-      </div>
+    <footer><span>© {{ currentYear }} OdontoClinic</span><span>Plataforma clínica segura</span></footer>
+  </section>
 
-      <div class="mb-2">
-        <label class="form-label">Contraseña</label>
-        <div class="input-group">
-          <input [type]="showPassword ? 'text' : 'password'" class="form-control" placeholder="******" formControlName="password" />
-          <button class="btn btn-outline-secondary" type="button" (click)="showPassword = !showPassword">
-            <i class="fa" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
-          </button>
-        </div>
-        <div class="form-text text-danger" *ngIf="form.controls.password.touched && form.controls.password.invalid">
-          Mínimo 6 caracteres.
-        </div>
-      </div>
+  <section class="login-form-panel">
+    <div class="login-form-wrap">
+      <div class="portal-label"><span class="material-symbols-outlined">badge</span> Portal de profesionales</div>
+      <h2>Bienvenido de nuevo</h2>
+      <p class="welcome-copy">Ingresa tus credenciales para continuar.</p>
 
-      <div class="mb-2">
-        <button class="btn btn-primary w-100" [disabled]="loading">
-          <span *ngIf="!loading">Iniciar sesión</span>
-          <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="field-block">
+          <label for="login-email">Correo electrónico</label>
+          <div class="field-with-icon" [class.invalid]="form.controls.email.touched && form.controls.email.invalid">
+            <span class="material-symbols-outlined">mail</span>
+            <input id="login-email" type="email" placeholder="tu@clinica.com" autocomplete="email" formControlName="email">
+          </div>
+          <small class="field-error" *ngIf="form.controls.email.touched && form.controls.email.invalid">Ingresa un correo válido.</small>
+        </div>
+
+        <div class="field-block">
+          <label for="login-password">Contraseña</label>
+          <div class="field-with-icon" [class.invalid]="form.controls.password.touched && form.controls.password.invalid">
+            <span class="material-symbols-outlined">lock</span>
+            <input id="login-password" [type]="showPassword ? 'text' : 'password'" placeholder="Mínimo 6 caracteres" autocomplete="current-password" formControlName="password">
+            <button type="button" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+              <span class="material-symbols-outlined">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+          <small class="field-error" *ngIf="form.controls.password.touched && form.controls.password.invalid">La contraseña debe tener al menos 6 caracteres.</small>
+        </div>
+
+        <button class="login-submit" type="submit" [disabled]="loading">
+          <span class="spinner-border spinner-border-sm" *ngIf="loading" aria-hidden="true"></span>
+          <span>{{ loading ? 'Verificando…' : 'Iniciar sesión' }}</span>
+          <span class="material-symbols-outlined" *ngIf="!loading">arrow_forward</span>
         </button>
-      </div>
 
-      <div class="alert alert-danger py-2" *ngIf="errorMsg">
-        {{ errorMsg }}
+        <div class="login-error" *ngIf="errorMsg" role="alert">
+          <span class="material-symbols-outlined">error</span><span>{{ errorMsg }}</span>
+        </div>
+      </form>
+
+      <div class="restricted"><span>Acceso restringido</span></div>
+      <div class="support-note">
+        <span class="material-symbols-outlined">info</span>
+        <span><strong>¿Necesitas acceso?</strong> Tu cuenta debe ser habilitada por el administrador de la clínica.</span>
       </div>
-    </form>
-  </div>
-</div>
+      <div class="connection"><span class="material-symbols-outlined">verified_user</span> Conectado al servidor seguro de OdontoClinic</div>
+    </div>
+  </section>
+</main>
+

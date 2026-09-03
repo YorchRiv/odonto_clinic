@@ -1,252 +1,84 @@
-<div class="page">
-  <div class="page-header">
-    <div>
-      <h3 class="title">Agenda</h3>
-      <p class="subtitle">Gestiona las citas y horarios de la clínica</p>
+<div class="page agenda-page">
+  <header class="page-header">
+    <div><div class="heading-row"><h1 class="title">Agenda</h1><span class="status-pill activo">Clínica operativa</span></div><p class="subtitle">Gestiona citas, horarios y estados de atención.</p></div>
+    <button class="btn btn-primary" type="button" (click)="openNuevaCita()"><span class="material-symbols-outlined">event_available</span> Nueva cita</button>
+  </header>
+
+  <section class="agenda-controls oc-card">
+    <div class="period-nav"><button class="icon-btn" type="button" (click)="navegarPeriodo(-1)" aria-label="Periodo anterior"><span class="material-symbols-outlined">chevron_left</span></button><button class="today-button" type="button" (click)="irHoy()">Hoy</button><button class="icon-btn" type="button" (click)="navegarPeriodo(1)" aria-label="Periodo siguiente"><span class="material-symbols-outlined">chevron_right</span></button></div>
+    <h2><span class="material-symbols-outlined">calendar_month</span>{{ etiquetaPeriodo() }}</h2>
+    <div class="segmented"><button type="button" [class.active]="vista() === 'DIA'" (click)="setVista('DIA')">Día</button><button type="button" [class.active]="vista() === 'SEMANA'" (click)="setVista('SEMANA')">Semana</button><button type="button" [class.active]="vista() === 'MES'" (click)="setVista('MES')">Mes</button></div>
+  </section>
+
+  <section class="agenda-filters">
+    <div class="status-tabs">
+      <button type="button" [class.active]="isFiltro('TODAS')" (click)="setFiltro('TODAS')">Todas <b>{{ citasVisibles().length }}</b></button>
+      <button type="button" [class.active]="isFiltro('NUEVA')" (click)="setFiltro('NUEVA')"><i class="new"></i>Nuevas <b>{{ contarEstado('NUEVA') }}</b></button>
+      <button type="button" [class.active]="isFiltro('PENDIENTE')" (click)="setFiltro('PENDIENTE')"><i class="pending"></i>Pendientes <b>{{ contarEstado('PENDIENTE') }}</b></button>
+      <button type="button" [class.active]="isFiltro('CONFIRMADA')" (click)="setFiltro('CONFIRMADA')"><i></i>Confirmadas <b>{{ contarEstado('CONFIRMADA') }}</b></button>
+      <button type="button" [class.active]="isFiltro('FINALIZADA')" (click)="setFiltro('FINALIZADA')"><i class="done"></i>Finalizadas <b>{{ contarEstado('FINALIZADA') }}</b></button>
+      <button type="button" [class.active]="isFiltro('CANCELADA')" (click)="setFiltro('CANCELADA')"><i class="cancelled"></i>Canceladas <b>{{ contarEstado('CANCELADA') }}</b></button>
     </div>
+    <div class="agenda-search"><span class="material-symbols-outlined">search</span><input type="search" placeholder="Filtrar por paciente o procedimiento" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"></div>
+  </section>
 
-    <!-- Nueva cita → abre modal -->
-    <a href="#" (click)="$event.preventDefault(); openNuevaCita()" class="btn btn-primary btn-new">
-      <i class="fa-solid fa-plus me-2"></i> Nueva Cita
-    </a>
-  </div>
+  <div class="agenda-loading oc-card" *ngIf="(vista() === 'DIA' && !agendaDelDia()) || (vista() !== 'DIA' && cargandoRango())"><div class="skeleton" *ngFor="let n of [1,2,3,4,5]"></div></div>
 
-  <div class="row g-4">
-    <!-- ===== Calendario ===== -->
-    <div class="col-12 col-md-auto">
-      <div class="card calendar-card">
-        <div class="card-header d-flex align-items-center justify-content-between border-0">
-          <button class="icon-btn" (click)="mesAnterior()" aria-label="Anterior">
-            <i class="fa-solid fa-chevron-left"></i>
-          </button>
-          <div class="month-label text-capitalize">{{ etiquetaMes() }}</div>
-          <button class="icon-btn" (click)="mesSiguiente()" aria-label="Siguiente">
-            <i class="fa-solid fa-chevron-right"></i>
-          </button>
-        </div>
-
-        <div class="card-body pt-0">
-          <div class="calendar-grid">
-            <div class="dow">Dom</div><div class="dow">Lun</div><div class="dow">Mar</div>
-            <div class="dow">Mié</div><div class="dow">Jue</div><div class="dow">Vie</div><div class="dow">Sáb</div>
-
-            <ng-container *ngFor="let fila of grillaCalendario()">
-              <ng-container *ngFor="let celda of fila">
-                <button
-                  class="day"
-                  [class.muted]="!celda.delMesActual || !celda.date"
-                  [class.today]="celda.esHoy"
-                  [class.selected]="celda.esSeleccionado"
-                  [disabled]="!celda.date"
-                  (click)="elegirDia(celda)"
-                >
-                  {{ celda.numero || '' }}
-                </button>
-              </ng-container>
-            </ng-container>
-          </div>
-        </div>
+  <section class="day-layout" *ngIf="vista() === 'DIA' && agendaDelDia()">
+    <div class="oc-card day-schedule">
+      <div class="schedule-header"><span>Hora</span><span>Citas del día</span></div>
+      <div class="day-list" *ngIf="citasVisibles().length; else emptyDay">
+        <button type="button" class="day-appointment" *ngFor="let it of citasVisibles(); trackBy: trackById" (click)="abrirDetalle(it)">
+          <time>{{ it.hora }}</time>
+          <span class="status-line" [class]="'state-' + it.status.toLowerCase()"></span>
+          <span class="appointment-copy"><span><strong>{{ it.paciente || 'Paciente' }}</strong><span class="status-pill" [class.confirmada]="it.status === 'CONFIRMADA'" [class.pendiente]="it.status === 'PENDIENTE'" [class.nueva]="it.status === 'NUEVA'" [class.finalizada]="it.status === 'FINALIZADA'" [class.cancelada]="it.status === 'CANCELADA'">{{ it.status | titlecase }}</span></span><small>{{ it.motivo || 'Consulta odontológica' }}</small><em *ngIf="it.notas">{{ it.notas }}</em></span>
+          <span class="material-symbols-outlined chevron">chevron_right</span>
+        </button>
       </div>
+      <ng-template #emptyDay><div class="empty-state"><span class="empty-state-icon"><span class="material-symbols-outlined">event_busy</span></span><h3>No hay citas programadas</h3><p>No tienes citas para esta fecha con los filtros seleccionados.</p><button class="btn btn-primary btn-sm mt-3" type="button" (click)="openNuevaCita()">Programar cita</button></div></ng-template>
     </div>
 
-    <!-- ===== Agenda del día ===== -->
-    <div class="col-12 col-md">
-      <div class="card schedule-card">
-        <div class="card-header border-0 d-flex align-items-center justify-content-between">
-          <h5 class="mb-0">Horarios - {{ etiquetaFechaSeleccionada() }}</h5>
-
-          <!-- Dropdown de filtro de estado -->
-          <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-              {{ labelFiltroActual() }}
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><button class="dropdown-item" [class.active]="isFiltro('TODAS')"       (click)="setFiltro('TODAS')">Todas</button></li>
-              <li><button class="dropdown-item" [class.active]="isFiltro('CONFIRMADA')" (click)="setFiltro('CONFIRMADA')">Confirmada</button></li>
-              <li><button class="dropdown-item" [class.active]="isFiltro('PENDIENTE')"  (click)="setFiltro('PENDIENTE')">Pendiente</button></li>
-              <li><button class="dropdown-item" [class.active]="isFiltro('NUEVA')"      (click)="setFiltro('NUEVA')">Nueva</button></li>
-              <li><button class="dropdown-item" [class.active]="isFiltro('FINALIZADA')" (click)="setFiltro('FINALIZADA')">Finalizada</button></li>
-              <li><button class="dropdown-item" [class.active]="isFiltro('CANCELADA')"  (click)="setFiltro('CANCELADA')">Cancelada</button></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="list-group list-group-flush">
-          <ng-container *ngIf="agendaDelDia() as dia">
-            <button
-              *ngFor="let it of itemsFiltrados(dia.items); trackBy: trackById"
-              class="list-group-item list-group-item-action d-flex align-items-center justify-content-between item-row"
-            >
-              <div class="d-flex align-items-center gap-3">
-                <div class="time-badge">{{ it.hora }}</div>
-                <div>
-                  <div class="fw-semibold" *ngIf="it.status !== 'DISPONIBLE'">{{ it.paciente }}</div>
-                  <div class="text-muted small" *ngIf="it.status !== 'DISPONIBLE'">{{ it.motivo }}</div>
-                  <div class="text-muted" *ngIf="it.status === 'DISPONIBLE'">Horario disponible</div>
-                </div>
-              </div>
-
-              <!-- Acciones / estado -->
-              <div class="item-actions d-flex align-items-center gap-2 ms-auto">
-                <span class="status-pill"
-                      [class.pendiente]="it.status === 'PENDIENTE'"
-                      [class.confirmada]="it.status === 'CONFIRMADA'"
-                      [class.nueva]="it.status === 'NUEVA'"
-                      [class.finalizada]="it.status === 'FINALIZADA'"
-                      [class.cancelada]="it.status === 'CANCELADA'"
-                      *ngIf="it.status !== 'DISPONIBLE'">
-                  {{ it.status | titlecase }}
-                </span>
-
-                <button *ngIf="it.status === 'DISPONIBLE'"
-                        class="btn btn-light btn-sm slot-btn"
-                        (click)="openNuevaCita(it.hora)">
-                  <i class="fa-solid fa-plus me-1"></i> Agendar
-                </button>
-
-                <div class="dropdown">
-                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                    Acciones
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li *ngIf="it.status !== 'DISPONIBLE'">
-                      <button class="dropdown-item" (click)="openEditarCita(it)">Editar</button>
-                    </li>
-                    <li *ngIf="it.status !== 'DISPONIBLE'">
-                      <button class="dropdown-item" (click)="marcarComo(it.id, 'CONFIRMADA')">Marcar Confirmada</button>
-                    </li>
-                    <li *ngIf="it.status !== 'DISPONIBLE'">
-                      <button class="dropdown-item" (click)="marcarComo(it.id, 'PENDIENTE')">Marcar Pendiente</button>
-                    </li>
-                    <li *ngIf="it.status !== 'DISPONIBLE'">
-                      <button class="dropdown-item" (click)="marcarComo(it.id, 'NUEVA')">Marcar Nueva</button>
-                    </li>
-                    <li *ngIf="it.status !== 'DISPONIBLE'">
-                      <button class="dropdown-item" (click)="marcarComo(it.id, 'FINALIZADA')">Marcar Finalizada</button>
-                    </li>
-                    <li *ngIf="it.status !== 'DISPONIBLE'">
-                      <button class="dropdown-item" (click)="marcarComo(it.id, 'CANCELADA')">Marcar Cancelada</button>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li *ngIf="it.status !== 'DISPONIBLE'">
-                      <button class="dropdown-item text-danger" (click)="eliminarCita(it.id)">Eliminar</button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </button>
-          </ng-container>
-
-          <div class="list-group-item text-center py-5 text-muted" *ngIf="!agendaDelDia()">
-            Cargando horarios…
-          </div>
-        </div>
+    <aside class="appointment-drawer oc-card" *ngIf="citaDetalle() as detail">
+      <header><div><h2>Detalle de cita</h2><span class="status-pill" [class.confirmada]="detail.status === 'CONFIRMADA'" [class.pendiente]="detail.status === 'PENDIENTE'" [class.nueva]="detail.status === 'NUEVA'" [class.finalizada]="detail.status === 'FINALIZADA'" [class.cancelada]="detail.status === 'CANCELADA'">{{ detail.status | titlecase }}</span></div><button class="icon-btn" type="button" (click)="cerrarDetalle()"><span class="material-symbols-outlined">close</span></button></header>
+      <div class="drawer-body">
+        <div class="patient-summary"><span class="avatar avatar-lg">{{ (detail.paciente || 'P').charAt(0) }}</span><span><strong>{{ detail.paciente || 'Paciente' }}</strong><small>Expediente de paciente</small></span></div>
+        <div class="detail-block"><span class="detail-icon material-symbols-outlined">calendar_today</span><span><small>Fecha</small><strong>{{ etiquetaPeriodo() }}</strong></span></div>
+        <div class="detail-block"><span class="detail-icon teal material-symbols-outlined">schedule</span><span><small>Horario</small><strong>{{ detail.hora }}</strong></span></div>
+        <div class="detail-block"><span class="detail-icon material-symbols-outlined">dentistry</span><span><small>Motivo de consulta</small><strong>{{ detail.motivo || 'Sin motivo registrado' }}</strong></span></div>
+        <div class="clinical-notes" *ngIf="detail.notas"><span>Notas clínicas / observaciones</span><p>{{ detail.notas }}</p></div>
+        <label class="form-label" for="detail-status">Actualizar estado</label>
+        <select id="detail-status" class="form-select" [ngModel]="detail.status" (ngModelChange)="marcarComo(detail.id, $event)"><option value="NUEVA">Nueva</option><option value="PENDIENTE">Pendiente</option><option value="CONFIRMADA">Confirmada</option><option value="FINALIZADA">Finalizada</option><option value="CANCELADA">Cancelada</option></select>
       </div>
-    </div>
-  </div>
+      <footer><button class="btn btn-primary" type="button" (click)="marcarComo(detail.id, 'FINALIZADA')"><span class="material-symbols-outlined">check_circle</span> Marcar finalizada</button><div><button class="btn btn-light" type="button" (click)="editarDesdeDetalle(detail)">Editar cita</button><button class="btn btn-outline-danger" type="button" (click)="eliminarCita(detail.id)">Eliminar</button></div></footer>
+    </aside>
+  </section>
+
+  <section class="week-view oc-card" *ngIf="vista() === 'SEMANA' && !cargandoRango()">
+    <article class="week-day" *ngFor="let day of diasSemana()"><header><span>{{ day | date:'EEE':'':'es' }}</span><strong>{{ day | date:'d' }}</strong><small>{{ itemsParaFecha(day).length }} citas</small></header><div class="week-items"><button type="button" *ngFor="let it of itemsParaFecha(day); trackBy: trackById" (click)="abrirDetalle(it)"><time>{{ it.hora }}</time><strong>{{ it.paciente }}</strong><small>{{ it.motivo || 'Consulta' }}</small><span class="status-dot" [class.pending]="it.status === 'PENDIENTE'" [class.new]="it.status === 'NUEVA'" [class.cancelled]="it.status === 'CANCELADA'"></span></button><span class="no-events" *ngIf="!itemsParaFecha(day).length">Sin citas</span></div></article>
+  </section>
+
+  <section class="month-view oc-card" *ngIf="vista() === 'MES' && !cargandoRango()">
+    <div class="month-dow" *ngFor="let label of ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB']">{{ label }}</div>
+    <ng-container *ngFor="let week of grillaCalendario()"><button type="button" class="month-day" *ngFor="let cell of week" [class.muted]="!cell.date" [class.today]="cell.esHoy" [class.selected]="cell.esSeleccionado" [disabled]="!cell.date" (click)="elegirDiaMes(cell)"><strong>{{ cell.numero }}</strong><span *ngFor="let it of itemsParaFecha(cell.date) | slice:0:3"><i [class.pending]="it.status === 'PENDIENTE'" [class.new]="it.status === 'NUEVA'" [class.cancelled]="it.status === 'CANCELADA'"></i>{{ it.hora }} {{ it.paciente }}</span><small *ngIf="itemsParaFecha(cell.date).length > 3">+{{ itemsParaFecha(cell.date).length - 3 }} más</small></button></ng-container>
+  </section>
 </div>
 
-<!-- =================== MODAL NUEVA / EDITAR =================== -->
-<div class="modal fade" tabindex="-1" #citaModal>
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form #f="ngForm" (ngSubmit)="submitNuevaCita(f)">
-        <div class="modal-header">
-          <h5 class="modal-title">{{ editandoId ? 'Editar cita' : 'Nueva cita' }}</h5>
-          <button type="button" class="btn-close" (click)="closeNuevaCita()" aria-label="Close"></button>
-        </div>
+<div class="drawer-backdrop" *ngIf="citaDetalle() && vista() !== 'DIA'" (click)="cerrarDetalle()"></div>
+<aside class="appointment-drawer floating" *ngIf="citaDetalle() && vista() !== 'DIA' && citaDetalle() as detail">
+  <header><div><h2>Detalle de cita</h2><span class="status-pill">{{ detail.status | titlecase }}</span></div><button class="icon-btn" type="button" (click)="cerrarDetalle()"><span class="material-symbols-outlined">close</span></button></header>
+  <div class="drawer-body"><div class="patient-summary"><span class="avatar avatar-lg">{{ (detail.paciente || 'P').charAt(0) }}</span><span><strong>{{ detail.paciente || 'Paciente' }}</strong><small>{{ detail.hora }} · {{ detail.motivo || 'Consulta' }}</small></span></div><div class="clinical-notes" *ngIf="detail.notas"><span>Notas</span><p>{{ detail.notas }}</p></div><label class="form-label">Actualizar estado</label><select class="form-select" [ngModel]="detail.status" (ngModelChange)="marcarComo(detail.id, $event)"><option value="NUEVA">Nueva</option><option value="PENDIENTE">Pendiente</option><option value="CONFIRMADA">Confirmada</option><option value="FINALIZADA">Finalizada</option><option value="CANCELADA">Cancelada</option></select></div>
+  <footer><button class="btn btn-primary" type="button" (click)="editarDesdeDetalle(detail)">Editar cita</button><button class="btn btn-outline-danger" type="button" (click)="eliminarCita(detail.id)">Eliminar</button></footer>
+</aside>
 
-        <div class="modal-body">
-          <!-- Fecha -->
-          <div class="mb-3">
-            <label class="form-label">Fecha</label>
-            <input
-              type="date"
-              class="form-control"
-              name="fecha"
-              [(ngModel)]="dateInput"
-              (ngModelChange)="onFechaInputChange($event)"
-              required
-            >
-            <div class="form-text">Se guardará como dd-MM-yyyy.</div>
-          </div>
+<div class="modal fade" tabindex="-1" #citaModal><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content"><form #f="ngForm" (ngSubmit)="submitNuevaCita(f)">
+  <div class="modal-header"><div class="modal-title-wrap"><span class="modal-title-icon material-symbols-outlined">event_available</span><div><h5 class="modal-title">{{ editandoId ? 'Editar cita' : 'Nueva cita' }}</h5><p>{{ editandoId ? 'Actualiza los datos de la cita seleccionada.' : 'Programa una cita en el cronograma clínico.' }}</p></div></div><button type="button" class="btn-close" (click)="closeNuevaCita()" aria-label="Cerrar"></button></div>
+  <div class="modal-body"><div class="row g-3">
+    <div class="col-md-6"><label class="form-label">Fecha *</label><input type="date" class="form-control" name="fecha" [(ngModel)]="dateInput" (ngModelChange)="onFechaInputChange($event)" required></div>
+    <div class="col-md-6"><label class="form-label">Hora *</label><input type="time" class="form-control" name="hora" [(ngModel)]="nuevaCita.hora" required></div>
+    <div class="col-12"><label class="form-label">Paciente *</label><div class="position-relative"><input type="text" class="form-control" placeholder="Buscar por nombre, DPI o teléfono" [ngModel]="pacienteTexto()" (ngModelChange)="onPacienteTextoChange($event)" (blur)="onPacienteBlur()" [ngModelOptions]="{standalone: true}" required><div class="dropdown-menu w-100 show autocomplete-menu" *ngIf="showSugerencias() && resultadosPacientes().length"><button type="button" class="dropdown-item patient-option" *ngFor="let p of resultadosPacientes(); trackBy: trackByPacId" (mousedown)="selectPaciente(p)"><span class="avatar">{{ initialsPac(p) }}</span><span><strong>{{ p.nombres }} {{ p.apellidos }}</strong><small>{{ p.dpi || p.telefono }}</small></span></button></div><div class="dropdown-menu w-100 show" *ngIf="showSugerencias() && !resultadosPacientes().length"><div class="p-3 text-muted">Sin resultados.</div><button type="button" class="dropdown-item text-primary" (mousedown)="irACrearPaciente()">+ Crear paciente</button></div></div><div class="text-danger small mt-1" *ngIf="pacienteError()">{{ pacienteError() }}</div></div>
+    <div class="col-12"><label class="form-label">Motivo de consulta *</label><input class="form-control" name="motivo" [(ngModel)]="nuevaCita.motivo" required></div>
+    <div class="col-12"><label class="form-label">Notas clínicas</label><textarea class="form-control" rows="4" name="notas" [(ngModel)]="nuevaCita.notas"></textarea></div>
+  </div><div class="alert alert-danger mt-3 mb-0" *ngIf="formError()">{{ formError() }}</div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-light" (click)="closeNuevaCita()">Cancelar</button><button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando() || !pacienteSeleccionadoId()">{{ creando() ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear cita') }}</button></div>
+</form></div></div></div>
 
-          <!-- Hora -->
-          <div class="mb-2">
-            <label class="form-label">Hora</label>
-            <input type="time" class="form-control" name="hora" [(ngModel)]="nuevaCita.hora" required>
-          </div>
-          <div class="text-danger small mb-2" *ngIf="formError()">{{ formError() }}</div>
-
-          <!-- Paciente (autocompletar) -->
-          <div class="mb-3">
-            <label class="form-label">Paciente</label>
-            <div class="position-relative">
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Escribe nombre, DPI o teléfono…"
-                [ngModel]="pacienteTexto()"
-                (ngModelChange)="onPacienteTextoChange($event)"
-                (blur)="onPacienteBlur()"
-                [ngModelOptions]="{standalone: true}"
-                required
-              />
-
-              <!-- Sugerencias -->
-              <div
-                class="dropdown-menu w-100 show"
-                *ngIf="showSugerencias() && resultadosPacientes().length"
-                style="max-height: 220px; overflow:auto;"
-              >
-                <button
-                  type="button"
-                  class="dropdown-item d-flex align-items-center gap-2"
-                  *ngFor="let p of resultadosPacientes(); trackBy: trackByPacId"
-                  (mousedown)="selectPaciente(p)"
-                >
-                  <span class="badge rounded-pill text-bg-light">{{ initialsPac(p) }}</span>
-                  <span>
-                    <span class="fw-semibold">{{ p.nombres }} {{ p.apellidos }}</span>
-                    <small class="text-muted ms-1" *ngIf="p.dpi">DPI: {{ p.dpi }}</small>
-                  </span>
-                </button>
-              </div>
-
-              <!-- Sin resultados -->
-              <div class="dropdown-menu w-100 show" *ngIf="showSugerencias() && !resultadosPacientes().length">
-                <div class="px-3 py-2 text-muted small">Sin resultados.</div>
-                <div class="px-2 pb-2">
-                  <button type="button" class="btn btn-outline-primary w-100" (mousedown)="irACrearPaciente()">
-                    Crear paciente
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="text-danger small mt-1" *ngIf="pacienteError()">{{ pacienteError() }}</div>
-          </div>
-
-          <!-- Motivo -->
-          <div class="mb-3">
-            <label class="form-label">Motivo</label>
-            <input type="text" class="form-control" name="motivo" [(ngModel)]="nuevaCita.motivo">
-          </div>
-
-          <!-- Notas -->
-          <div class="mb-1">
-            <label class="form-label">Notas (opcional)</label>
-            <textarea class="form-control" rows="3" name="notas" [(ngModel)]="nuevaCita.notas"></textarea>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-light" (click)="closeNuevaCita()">Cancelar</button>
-          <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando() || !pacienteSeleccionadoId()">
-            {{ creando() ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear cita') }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-<!-- ============================================================ -->

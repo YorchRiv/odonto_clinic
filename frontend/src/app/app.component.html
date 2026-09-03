@@ -1,106 +1,85 @@
-<!-- Mostrar layout solo si NO estoy en /login -->
-<div *ngIf="!isLoginRoute; else loginOutlet">
-  <!-- Navbar superior -->
-  <nav class="navbar navbar-expand-lg navbar-dark sticky-top navbar-gradient">
-    <div class="container-fluid">
-      <!-- Logo + Nombre -->
-     <a class="navbar-brand d-flex align-items-center fs-2" routerLink="/dashboard">
-  <img src="assets/logoblanco.svg" alt="DentalPro" class="navbar-logo me-2" />
-  <span class="fw-bold fs-4">DentalPro</span>
-</a>
+<ng-container *ngIf="!isLoginRoute; else loginOutlet">
+  <div class="app-shell">
+    <aside class="sidebar" [class.open]="sidebarOpen" aria-label="Navegación principal">
+      <a class="brand" routerLink="/dashboard" (click)="closeSidebar()">
+        <span class="brand-mark"><img src="logo.svg" alt="Logo OdontoClinic"></span>
+        <span><strong>OdontoClinic</strong><small>Dental Cloud</small></span>
+      </a>
 
+      <nav class="sidebar-nav">
+        <a routerLink="/dashboard" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="material-symbols-outlined">dashboard</span><span>Dashboard</span>
+        </a>
+        <a routerLink="/agenda" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="material-symbols-outlined">calendar_today</span><span>Agenda</span>
+        </a>
+        <a routerLink="/pacientes" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="material-symbols-outlined">group</span><span>Pacientes</span>
+        </a>
+        <a routerLink="/historia-clinica" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="material-symbols-outlined">clinical_notes</span><span>Historia Clínica</span>
+        </a>
+        <a routerLink="/reportes" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="material-symbols-outlined">bar_chart</span><span>Reportes</span>
+        </a>
 
-      <!-- Lado derecho -->
-      <div class="d-flex align-items-center ms-auto">
-        <!-- Usuario -->
-        <div class="dropdown">
-          <a
-            class="d-flex align-items-center text-white text-decoration-none dropdown-toggle"
-            href="#"
-            id="dropdownUser"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            <strong>{{ currentUser?.nombre }} {{ currentUser?.apellido || '' }}</strong>
-          </a>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownUser">
-            <li><a class="dropdown-item" routerLink="">Perfil</a></li>
-            <li><a class="dropdown-item" routerLink="/configuracion">Configuración</a></li>
-            <li><hr class="dropdown-divider" /></li>
-            <li>
-              <button class="dropdown-item" type="button" (click)="logout()">
-                Cerrar sesión
-              </button>
-            </li>
-          </ul>
-        </div>
+        <span class="nav-section" *ngIf="isAdmin">Administración</span>
+        <a *ngIf="isAdmin" routerLink="/configuracion" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="material-symbols-outlined">manage_accounts</span><span>Usuarios</span>
+        </a>
+      </nav>
+
+      <div class="clinic-state">
+        <span class="online-dot"></span>
+        <span><strong>Clínica operativa</strong><small>Conexión segura</small></span>
+        <span class="material-symbols-outlined">keyboard_tab</span>
       </div>
-    </div>
-  </nav>
+    </aside>
 
-  <!-- Layout principal -->
-  <div class="d-flex app-shell">
-    <!-- Sidebar -->
-    <nav id="sidebar" class="col-md-2 d-md-block sidebar">
-      <ul class="nav flex-column">
-        <li class="nav-item mb-1">
-          <a class="nav-link text-white d-flex align-items-center gap-2"
-             routerLink="/dashboard" routerLinkActive="active">
-            <i class="fa-solid fa-chart-line"></i>
-            <span class="text-nowrap">Dashboard</span>
-          </a>
-        </li>
+    <button class="sidebar-backdrop" [class.visible]="sidebarOpen" (click)="closeSidebar()" aria-label="Cerrar menú"></button>
 
-        <li class="nav-item mb-1">
-          <a class="nav-link text-white d-flex align-items-center gap-2"
-             routerLink="/agenda" routerLinkActive="active">
-            <i class="fa-solid fa-calendar-check"></i>
-            <span class="text-nowrap">Agenda</span>
-          </a>
-        </li>
+    <section class="app-workspace">
+      <header class="topbar">
+        <button class="mobile-menu" type="button" (click)="toggleSidebar()" aria-label="Abrir menú">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div class="topbar-context">
+          <span>OdontoClinic</span><span class="slash">/</span>
+          <span class="clinic-chip"><span class="material-symbols-outlined">apartment</span> Sede Principal</span>
+        </div>
+        <a class="global-search" routerLink="/pacientes">
+          <span class="material-symbols-outlined">search</span>
+          <span>Buscar paciente por nombre o DPI</span>
+          <kbd>⌘K</kbd>
+        </a>
+        <a class="topbar-new" routerLink="/agenda" [queryParams]="{nueva: 1}">
+          <span class="material-symbols-outlined">add</span><span>Nueva cita</span>
+        </a>
+        <button class="topbar-icon" type="button" aria-label="Ayuda">
+          <span class="material-symbols-outlined">help</span>
+        </button>
+        <div class="user-menu-wrap">
+          <button class="user-trigger" type="button" (click)="toggleUserMenu($event)" [attr.aria-expanded]="userMenuOpen">
+            <span class="user-avatar">{{ initials }}</span>
+            <span class="user-copy"><strong>{{ currentUser?.nombre }} {{ currentUser?.apellido }}</strong><small>{{ roleLabel }}</small></span>
+            <span class="material-symbols-outlined">expand_more</span>
+          </button>
+          <div class="user-popover" *ngIf="userMenuOpen" (click)="$event.stopPropagation()">
+            <div class="user-popover-head">
+              <span class="user-avatar">{{ initials }}</span>
+              <span><strong>{{ currentUser?.nombre }} {{ currentUser?.apellido }}</strong><small>{{ currentUser?.email || roleLabel }}</small></span>
+            </div>
+            <a routerLink="/perfil" (click)="userMenuOpen = false"><span class="material-symbols-outlined">person</span> Mi perfil</a>
+            <a *ngIf="isAdmin" routerLink="/configuracion" (click)="userMenuOpen = false"><span class="material-symbols-outlined">settings</span> Usuarios</a>
+            <button type="button" (click)="logout()"><span class="material-symbols-outlined">logout</span> Cerrar sesión</button>
+          </div>
+        </div>
+      </header>
 
-        <li class="nav-item mb-1">
-          <a class="nav-link text-white d-flex align-items-center gap-2"
-             routerLink="/pacientes" routerLinkActive="active">
-            <i class="fa-solid fa-users"></i>
-            <span class="text-nowrap">Pacientes</span>
-          </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link text-white d-flex align-items-center gap-2"
-             routerLink="/historia-clinica" routerLinkActive="active">
-            <i class="fa-solid fa-notes-medical"></i>
-            <span class="text-nowrap">Historia Clínica</span>
-          </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link text-white d-flex align-items-center gap-2"
-             routerLink="/reportes" routerLinkActive="active">
-            <i class="fa-solid fa-chart-pie"></i>
-            <span class="text-nowrap">Reportes</span>
-          </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link text-white d-flex align-items-center gap-2"
-             routerLink="/configuracion" routerLinkActive="active">
-            <i class="fa-solid fa-gear"></i>
-            <span class="text-nowrap">Configuración</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-
-    <!-- Contenido dinámico -->
-    <main class="col-md-10 ms-sm-auto px-md-4 py-4">
-      <router-outlet></router-outlet>
-    </main>
+      <main class="app-main"><router-outlet></router-outlet></main>
+    </section>
   </div>
-</div>
+</ng-container>
 
-<!-- En /login solo se renderiza el outlet (sin navbar/side) -->
-<ng-template #loginOutlet>
-  <router-outlet></router-outlet>
-</ng-template>
+<ng-template #loginOutlet><router-outlet></router-outlet></ng-template>
+

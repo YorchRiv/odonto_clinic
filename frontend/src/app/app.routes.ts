@@ -25,9 +25,19 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'agenda', component: AgendaComponent, canActivate: [authGuard] },
   { path: 'pacientes', component: PacientesComponent, canActivate: [authGuard] },
+  {
+    path: 'pacientes/:id',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pacientes/paciente-perfil.component').then(m => m.PacientePerfilComponent)
+  },
   { path: 'historia-clinica', component: HistoriaClinicaComponent, canActivate: [authGuard] },
   { path: 'reportes', component: ReportesComponent, canActivate: [authGuard] },
   { path: 'configuracion', component: ConfiguracionComponent, canActivate: [authGuard] },
+  {
+    path: 'perfil',
+    canActivate: [authGuard],
+    loadComponent: () => import('./perfil/perfil.component').then(m => m.PerfilComponent)
+  },
 
   // fallback
   { path: '**', redirectTo: 'dashboard' },

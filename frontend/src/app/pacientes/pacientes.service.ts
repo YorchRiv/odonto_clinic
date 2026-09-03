@@ -14,7 +14,7 @@ export interface Paciente {
   direccion?: string | null;
   estado: PacienteEstado;
   alergias?: string | null;
-  /** UI: 'dd-MM-yyyy' */
+  /** UI: 'yyyy-MM-dd', compatible con input[type=date] */
   fechaNacimiento?: string | null;
   dpi?: string | null;
 
@@ -51,13 +51,14 @@ export class PacientesService {
   private toISO(d?: string | null): string | null {
     if (!d) return null;
     if (/^\d{4}-\d{2}-\d{2}T/.test(d)) return d; // ya viene ISO
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return new Date(`${d}T00:00:00`).toISOString();
     const [dd, mm, yyyy] = d.replaceAll('/', '-').split('-');
     if (dd && mm && yyyy) return new Date(+yyyy, +mm - 1, +dd).toISOString();
     const t = Date.parse(d);
     return isNaN(t) ? null : new Date(t).toISOString();
   }
 
-  /** ISO -> 'dd-MM-yyyy' (para mostrar si lo quieres así en UI) */
+  /** ISO -> 'yyyy-MM-dd' para controles de fecha nativos */
   private toDDMMYYYY(iso?: string | null): string | null {
     if (!iso) return null;
     const d = new Date(iso);
@@ -65,7 +66,7 @@ export class PacientesService {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   /** 'Activo'/'INACTIVO' -> 'ACTIVO'|'INACTIVO' */
@@ -94,7 +95,7 @@ export class PacientesService {
     estado: this.normEstado(r?.estado),
     alergias: r?.alergias ?? null,
 
-    // Si el backend manda fechaNacimiento como timestamp/ISO, lo transformamos a 'dd-MM-yyyy'
+    // Si el backend manda un timestamp/ISO, lo normalizamos para input[type=date].
     fechaNacimiento: r?.fechaNacimiento ? this.toDDMMYYYY(String(r.fechaNacimiento)) : null,
 
     dpi: r?.dpi ?? null,

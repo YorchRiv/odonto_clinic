@@ -1,274 +1,147 @@
-<!-- Encabezado con logo -->
-<div class="dash-header">
-  <img src="assets/dientin.svg" alt="DentalPro" class="dash-logo" />
-  <div class="dash-titles">
-    <h1 class="h3 mb-0">Dashboard</h1>
-    <small class="text-muted">Resumen general de tu clínica dental</small>
-  </div>
-</div>
-
-<!-- Métricas -->
-<div class="row g-3 mb-4">
-  <div class="col-md-3">
-    <div class="card text-white border-0 shadow-sm metric-citashoy">
-      <div class="card-body">
-        <h6 class="mb-1">Total citas </h6>
-        <div class="fs-4 fw-bold">{{ citasFechaCount() }}</div>
+<div class="page dashboard-page">
+  <header class="page-header dashboard-header">
+    <div>
+      <div class="heading-row">
+        <h1 class="title">{{ greeting }}<span *ngIf="currentUserName">, {{ currentUserName }}</span></h1>
+        <span class="date-chip"><span class="material-symbols-outlined">calendar_today</span>{{ selectedDateLabel }}</span>
       </div>
+      <p class="subtitle">Este es el resumen de actividad de tu clínica odontológica.</p>
     </div>
-  </div>
-
-  <div class="col-md-3">
-    <div class="card text-white border-0 shadow-sm metric-p_activos">
-      <div class="card-body">
-        <h6 class="mb-1">Pacientes Activos</h6>
-        <div class="fs-4 fw-bold">{{ pacActivosCount() }}</div>
-      </div>
+    <div class="header-actions">
+      <button class="btn btn-light" type="button" (click)="verPacientes()"><span class="material-symbols-outlined">search</span> Buscar paciente</button>
+      <button class="btn btn-primary" type="button" (click)="openNuevaCita()"><span class="material-symbols-outlined">add</span> Nueva cita</button>
     </div>
-  </div>
+  </header>
 
-  <div class="col-md-3">
-    <div class="card text-white border-0 shadow-sm metric-p_inactivos">
-      <div class="card-body">
-        <h6 class="mb-1">Pacientes Inactivos</h6>
-        <div class="fs-4 fw-bold">{{ pacInactivosCount() }}</div>
-      </div>
-    </div>
-  </div>
+  <section class="metric-grid" aria-label="Resumen de métricas">
+    <article class="metric-card">
+      <div><span class="metric-label">Citas del día</span><strong>{{ citasFechaCount() }}</strong><small><span class="success">{{ citasConfirmadasCount() }} confirmadas</span></small></div>
+      <span class="metric-icon material-symbols-outlined">event</span>
+    </article>
+    <article class="metric-card">
+      <div><span class="metric-label">Pacientes activos</span><strong>{{ pacActivosCount() }}</strong><small>De {{ pacTotalCount() }} pacientes registrados</small></div>
+      <span class="metric-icon material-symbols-outlined">groups</span>
+    </article>
+    <article class="metric-card">
+      <div><span class="metric-label">Pacientes nuevos</span><strong>{{ pacNuevosMesCount() }}</strong><small>Registrados este mes</small></div>
+      <span class="metric-icon material-symbols-outlined">person_add</span>
+    </article>
+    <article class="metric-card">
+      <div><span class="metric-label">Citas por atender</span><strong>{{ citasPendientesCount() }}</strong><small>Pendientes o nuevas</small></div>
+      <span class="metric-icon material-symbols-outlined">schedule</span>
+    </article>
+  </section>
 
-  <div class="col-md-3">
-    <div class="card text-white border-0 shadow-sm metric-total-pacientes">
-      <div class="card-body">
-        <h6 class="mb-1">Total Pacientes</h6>
-        <div class="fs-4 fw-bold">{{ pacTotalCount() }}</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Acciones rápidas + Citas por fecha -->
-<div class="row g-4">
-  <!-- Acciones rápidas -->
-  <div class="col-lg-8">
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-white fw-bold">Acciones Rápidas</div>
-      <div class="card-body">
-        <button class="btn btn-primary w-100 mb-3" (click)="openNuevaCita()">
-          <i class="fa-solid fa-calendar-plus me-2"></i> Nueva Cita
-        </button>
-
-        <button class="btn btn-success w-100 mb-3" (click)="openNuevoPaciente()">
-          <i class="fa-solid fa-user-plus me-2"></i> Nuevo Paciente
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Citas por fecha -->
-  <div class="col-lg-4">
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-white fw-bold d-flex flex-wrap gap-2 align-items-center justify-content-between">
-        <span>Citas por fecha</span>
-
-        <div class="d-flex align-items-center gap-2">
-          <input
-            type="date"
-            class="form-control form-control-sm w-auto"
-            [ngModel]="fechaFiltroInput()"
-            (ngModelChange)="onFechaFiltroChange($event)"
-            [ngModelOptions]="{standalone: true}"
-          />
-          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="goHoy()">Hoy</button>
+  <div class="dashboard-layout">
+    <section class="oc-card agenda-card">
+      <div class="agenda-head">
+        <div><h2>Agenda del día</h2><span>{{ citasFechaCount() }} programadas</span></div>
+        <div class="agenda-date-actions">
+          <input type="date" class="form-control form-control-sm" [ngModel]="fechaFiltroInput()" (ngModelChange)="onFechaFiltroChange($event)" [ngModelOptions]="{standalone: true}" aria-label="Fecha de agenda">
+          <button class="btn btn-sm btn-light" type="button" (click)="goHoy()">Hoy</button>
+          <button class="link-button" type="button" (click)="verAgenda()">Ver agenda completa <span class="material-symbols-outlined">arrow_forward</span></button>
         </div>
       </div>
 
-      <div class="p-3" *ngIf="cargandoCitas()">
-        <div class="placeholder-glow">
-          <div class="placeholder col-12 mb-2"></div>
-          <div class="placeholder col-10 mb-2"></div>
-          <div class="placeholder col-8"></div>
-        </div>
+      <div class="status-filters">
+        <span>Todas ({{ citasFechaCount() }})</span>
+        <span>Confirmadas ({{ citasConfirmadasCount() }})</span>
+        <span>Pendientes ({{ citasPendientesCount() }})</span>
       </div>
 
-      <ul class="list-group list-group-flush" *ngIf="!cargandoCitas() && citasFechaTop().length; else sinCitas">
-        <li class="list-group-item d-flex justify-content-between align-items-start"
-            *ngFor="let c of citasFechaTop(); trackBy: trackById">
-          <div>
-            <div class="fw-semibold">{{ c.paciente }}</div>
-            <small class="text-muted">{{ c.motivo }} — {{ horaAMPM(c.hora) }}</small>
+      <div class="agenda-loading" *ngIf="cargandoCitas()">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+
+      <div class="appointment-list" *ngIf="!cargandoCitas() && citasFechaTop().length; else sinCitas">
+        <article class="appointment-row" *ngFor="let c of citasFechaTop(); trackBy: trackById">
+          <time>{{ horaAMPM(c.hora) }}</time>
+          <div class="appointment-main">
+            <div><strong>{{ c.paciente || 'Paciente' }}</strong><span class="status-pill" [ngClass]="{
+              'confirmada': c.status === 'CONFIRMADA', 'pendiente': c.status === 'PENDIENTE', 'nueva': c.status === 'NUEVA',
+              'finalizada': c.status === 'FINALIZADA', 'cancelada': c.status === 'CANCELADA'
+            }">{{ etiquetaStatus(c.status) }}</span></div>
+            <p><span class="material-symbols-outlined">dentistry</span>{{ c.motivo || 'Consulta odontológica' }}</p>
+            <small *ngIf="c.notas">{{ c.notas }}</small>
           </div>
-
-          <span class="status-pill" [ngClass]="{
-            'confirmada': c.status === 'CONFIRMADA',
-            'pendiente':  c.status === 'PENDIENTE',
-            'nueva':      c.status === 'NUEVA',
-            'finalizada': c.status === 'FINALIZADA',
-            'cancelada':  c.status === 'CANCELADA'
-          }">{{ etiquetaStatus(c.status) }}</span>
-        </li>
-      </ul>
+          <button class="btn btn-sm btn-light" type="button" (click)="verAgenda()">Ver cita</button>
+        </article>
+      </div>
 
       <ng-template #sinCitas>
-        <div class="list-group list-group-flush" *ngIf="!cargandoCitas()">
-          <div class="list-group-item text-muted">No hay citas para esa fecha.</div>
+        <div class="empty-state compact-empty" *ngIf="!cargandoCitas()">
+          <span class="empty-state-icon"><span class="material-symbols-outlined">event_available</span></span>
+          <h3>No hay citas programadas</h3>
+          <p>No tienes citas para la fecha seleccionada.</p>
+          <button class="btn btn-primary btn-sm" type="button" (click)="openNuevaCita()">Programar cita</button>
         </div>
       </ng-template>
-    </div>
+    </section>
+
+    <aside class="dashboard-side">
+      <section class="oc-card quick-card">
+        <div class="side-title"><h2>Acciones rápidas</h2><p>Operaciones frecuentes</p></div>
+        <div class="quick-grid">
+          <button type="button" (click)="openNuevaCita()"><span class="material-symbols-outlined">event_available</span><strong>Nueva cita</strong><small>Agendar horario</small></button>
+          <button type="button" (click)="openNuevoPaciente()"><span class="material-symbols-outlined">person_add</span><strong>Nuevo paciente</strong><small>Registro inicial</small></button>
+          <button type="button" (click)="verPacientes()"><span class="material-symbols-outlined">search</span><strong>Buscar paciente</strong><small>Nombre, DPI o teléfono</small></button>
+          <button type="button" (click)="verHistoria()"><span class="material-symbols-outlined">clinical_notes</span><strong>Historia clínica</strong><small>Consultar expediente</small></button>
+        </div>
+      </section>
+
+      <section class="oc-card patient-summary">
+        <div class="side-title"><h2>Estado de pacientes</h2><p>Distribución actual</p></div>
+        <div class="summary-total"><strong>{{ pacTotalCount() }}</strong><span>pacientes registrados</span></div>
+        <div class="progress"><div class="progress-bar" [style.width.%]="pacTotalCount() ? (pacActivosCount() / pacTotalCount()) * 100 : 0"></div></div>
+        <div class="summary-legend"><span><i class="active"></i>Activos <strong>{{ pacActivosCount() }}</strong></span><span><i></i>Inactivos <strong>{{ pacInactivosCount() }}</strong></span></div>
+      </section>
+    </aside>
   </div>
 </div>
 
-<!-- =============== MODAL: Nueva Cita =============== -->
 <div class="modal fade" tabindex="-1" #crearCitaModal>
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form #f="ngForm" (ngSubmit)="submitNuevaCita(f)">
-        <div class="modal-header">
-          <h5 class="modal-title">Nueva cita</h5>
-          <button type="button" class="btn-close" (click)="closeNuevaCita()" aria-label="Close"></button>
-        </div>
-
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Fecha</label>
-            <input type="date" class="form-control" name="fecha" [(ngModel)]="dateInput" required>
-            <div class="form-text">Se guardará como dd-MM-yyyy.</div>
-          </div>
-
-          <div class="mb-2">
-            <label class="form-label">Hora</label>
-            <input type="time" class="form-control" name="hora" [(ngModel)]="form.hora" required>
-          </div>
-          <div class="text-danger small mb-2" *ngIf="formError()">{{ formError() }}</div>
-
-          <!-- Paciente con autocompletar -->
-          <div class="mb-3">
-            <label class="form-label">Paciente</label>
-            <div class="position-relative">
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Escribe nombre, DPI o teléfono…"
-                [ngModel]="pacienteTexto()"
-                (ngModelChange)="onPacienteTextoChange($event)"
-                (blur)="onPacienteBlur()"
-                [ngModelOptions]="{standalone: true}"
-                required
-              />
-
-              <!-- Sugerencias -->
-              <div
-                class="dropdown-menu w-100 show dropdown-scroll"
-                *ngIf="mostrandoSugerencias() && resultadosPacientes().length"
-              >
-                <button
-                  type="button"
-                  class="dropdown-item d-flex align-items-center gap-2"
-                  *ngFor="let p of resultadosPacientes(); trackBy: trackByPacId"
-                  (mousedown)="selectPaciente(p)"
-                >
-                  <span class="badge rounded-pill text-bg-light">{{ initialsPac(p) }}</span>
-                  <span>
-                    <span class="fw-semibold">{{ p.nombres }} {{ p.apellidos }}</span>
-                    <small class="text-muted ms-1" *ngIf="p.dpi">DPI: {{ p.dpi }}</small>
-                  </span>
-                </button>
-              </div>
-
-              <!-- Sin resultados -->
-              <div class="dropdown-menu w-100 show" *ngIf="mostrandoSugerencias() && !resultadosPacientes().length">
-                <div class="px-3 py-2 text-muted small">Sin resultados.</div>
-                <div class="px-2 pb-2">
-                  <button type="button" class="btn btn-outline-primary w-100" (mousedown)="irACrearPacienteDesdeCita()">
-                    Crear paciente
-                  </button>
-                </div>
-              </div>
+  <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+    <form #f="ngForm" (ngSubmit)="submitNuevaCita(f)">
+      <div class="modal-header"><div class="modal-title-wrap"><span class="modal-title-icon material-symbols-outlined">event_available</span><div><h5 class="modal-title">Nueva cita</h5><p>Programa una cita en el cronograma clínico.</p></div></div><button type="button" class="btn-close" (click)="closeNuevaCita()" aria-label="Cerrar"></button></div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Fecha *</label><input type="date" class="form-control" name="fecha" [(ngModel)]="dateInput" required></div>
+          <div class="col-md-6"><label class="form-label">Hora *</label><input type="time" class="form-control" name="hora" [(ngModel)]="form.hora" required></div>
+          <div class="col-12 patient-autocomplete"><label class="form-label">Paciente *</label><div class="position-relative">
+            <input type="text" class="form-control" placeholder="Buscar por nombre, DPI o teléfono" [ngModel]="pacienteTexto()" (ngModelChange)="onPacienteTextoChange($event)" (blur)="onPacienteBlur()" [ngModelOptions]="{standalone: true}" required>
+            <div class="dropdown-menu w-100 show autocomplete-menu" *ngIf="mostrandoSugerencias() && resultadosPacientes().length">
+              <button type="button" class="dropdown-item patient-option" *ngFor="let p of resultadosPacientes(); trackBy: trackByPacId" (mousedown)="selectPaciente(p)"><span class="avatar">{{ initialsPac(p) }}</span><span><strong>{{ p.nombres }} {{ p.apellidos }}</strong><small>{{ p.dpi ? 'DPI: ' + p.dpi : p.telefono }}</small></span></button>
             </div>
-            <div class="text-danger small mt-1" *ngIf="pacienteError()">{{ pacienteError() }}</div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Motivo</label>
-            <input type="text" class="form-control" name="motivo" [(ngModel)]="form.motivo">
-          </div>
-
-          <div class="mb-1">
-            <label class="form-label">Notas (opcional)</label>
-            <textarea class="form-control" rows="3" name="notas" [(ngModel)]="form.notas"></textarea>
-          </div>
+            <div class="dropdown-menu w-100 show autocomplete-menu" *ngIf="mostrandoSugerencias() && !resultadosPacientes().length"><div class="p-3 text-muted">Sin resultados.</div><button type="button" class="dropdown-item text-primary" (mousedown)="irACrearPacienteDesdeCita()">+ Registrar nuevo paciente</button></div>
+          </div><div class="text-danger small mt-1" *ngIf="pacienteError()">{{ pacienteError() }}</div></div>
+          <div class="col-12"><label class="form-label">Motivo de consulta *</label><input class="form-control" name="motivo" [(ngModel)]="form.motivo" required placeholder="Ej. Limpieza dental y profilaxis"></div>
+          <div class="col-12"><label class="form-label">Notas clínicas y observaciones</label><textarea class="form-control" rows="4" name="notas" [(ngModel)]="form.notas" placeholder="Información adicional para el profesional"></textarea></div>
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-light" (click)="closeNuevaCita()">Cancelar</button>
-          <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando() || !pacienteSeleccionadoId()">
-            {{ creando() ? 'Guardando…' : 'Crear cita' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+        <div class="alert alert-danger mt-3 mb-0" *ngIf="formError()">{{ formError() }}</div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-light" (click)="closeNuevaCita()">Cancelar</button><button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando() || !pacienteSeleccionadoId()"><span class="spinner-border spinner-border-sm me-2" *ngIf="creando()"></span>{{ creando() ? 'Guardando…' : 'Crear cita' }}</button></div>
+    </form>
+  </div></div>
 </div>
 
-<!-- =============== MODAL: Nuevo Paciente =============== -->
 <div class="modal fade" tabindex="-1" #nuevoPacienteModal>
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <form #pacienteForm="ngForm" (ngSubmit)="submitNuevoPaciente(pacienteForm)">
-        <div class="modal-header">
-          <h5 class="modal-title">Nuevo paciente</h5>
-          <button type="button" class="btn-close" (click)="closeNuevoPaciente()" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">Nombres *</label>
-              <input class="form-control" name="nombres" [(ngModel)]="pacienteFormData.nombres" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Apellidos *</label>
-              <input class="form-control" name="apellidos" [(ngModel)]="pacienteFormData.apellidos" required>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Teléfono *</label>
-              <input class="form-control" name="telefono" [(ngModel)]="pacienteFormData.telefono" required>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Email</label>
-              <input type="email" class="form-control" name="email" [(ngModel)]="pacienteFormData.email">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">DPI</label>
-              <input class="form-control" name="dpi" [(ngModel)]="pacienteFormData.dpi">
-            </div>
-            <div class="col-md-8">
-              <label class="form-label">Dirección</label>
-              <input class="form-control" name="direccion" [(ngModel)]="pacienteFormData.direccion">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Fecha de nacimiento</label>
-              <input type="date" class="form-control" name="fechaNacimiento" [(ngModel)]="pacienteFormData.fechaNacimiento">
-            </div>
-            <div class="col-md-8">
-              <label class="form-label">Alergias</label>
-              <input class="form-control" name="alergias" [(ngModel)]="pacienteFormData.alergias">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Estado</label>
-              <select class="form-select" name="estado" [(ngModel)]="pacienteFormData.estado">
-                <option value="ACTIVO">Activo</option>
-                <option value="INACTIVO">Inactivo</option>
-              </select>
-            </div>
-          </div>
-          <div class="text-danger small mt-2" *ngIf="pacienteFormError()">{{ pacienteFormError() }}</div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-light" (click)="closeNuevoPaciente()">Cancelar</button>
-          <button type="submit" class="btn btn-primary" [disabled]="pacienteForm.invalid || guardandoPaciente()">
-            {{ guardandoPaciente() ? 'Guardando…' : 'Crear paciente' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+    <form #pacienteForm="ngForm" (ngSubmit)="submitNuevoPaciente(pacienteForm)">
+      <div class="modal-header"><div class="modal-title-wrap"><span class="modal-title-icon material-symbols-outlined">person_add</span><div><h5 class="modal-title">Nuevo paciente</h5><p>Registra sus datos personales y de contacto.</p></div></div><button type="button" class="btn-close" (click)="closeNuevoPaciente()" aria-label="Cerrar"></button></div>
+      <div class="modal-body"><div class="form-section"><h6><span>1</span> Información personal</h6><div class="row g-3">
+        <div class="col-md-6"><label class="form-label">Nombres *</label><input class="form-control" name="nombres" [(ngModel)]="pacienteFormData.nombres" required></div>
+        <div class="col-md-6"><label class="form-label">Apellidos *</label><input class="form-control" name="apellidos" [(ngModel)]="pacienteFormData.apellidos" required></div>
+        <div class="col-md-6"><label class="form-label">DPI / Identificación</label><input class="form-control" name="dpi" [(ngModel)]="pacienteFormData.dpi"></div>
+        <div class="col-md-6"><label class="form-label">Fecha de nacimiento</label><input type="date" class="form-control" name="fechaNacimiento" [(ngModel)]="pacienteFormData.fechaNacimiento"></div>
+      </div></div><div class="form-section"><h6><span>2</span> Contacto y datos clínicos</h6><div class="row g-3">
+        <div class="col-md-6"><label class="form-label">Teléfono *</label><input class="form-control" name="telefono" [(ngModel)]="pacienteFormData.telefono" required></div>
+        <div class="col-md-6"><label class="form-label">Correo electrónico</label><input type="email" class="form-control" name="email" [(ngModel)]="pacienteFormData.email"></div>
+        <div class="col-md-8"><label class="form-label">Dirección</label><input class="form-control" name="direccion" [(ngModel)]="pacienteFormData.direccion"></div>
+        <div class="col-md-4"><label class="form-label">Estado</label><select class="form-select" name="estado" [(ngModel)]="pacienteFormData.estado"><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option></select></div>
+        <div class="col-12"><label class="form-label">Alergias</label><textarea class="form-control" rows="2" name="alergias" [(ngModel)]="pacienteFormData.alergias" placeholder="Escribe alergias conocidas o indica que no tiene"></textarea></div>
+      </div></div><div class="alert alert-danger mt-3 mb-0" *ngIf="pacienteFormError()">{{ pacienteFormError() }}</div></div>
+      <div class="modal-footer"><button type="button" class="btn btn-light" (click)="closeNuevoPaciente()">Cancelar</button><button type="submit" class="btn btn-primary" [disabled]="pacienteForm.invalid || guardandoPaciente()">{{ guardandoPaciente() ? 'Guardando…' : 'Crear paciente' }}</button></div>
+    </form>
+  </div></div>
 </div>
+

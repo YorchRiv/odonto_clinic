@@ -1,248 +1,52 @@
-<div class="page">
+<div class="page clinical-page">
+  <header class="page-header">
+    <div><p class="eyebrow">OdontoClinic / Expediente clínico</p><div class="heading-row"><h1 class="title">Historia Clínica</h1><span class="status-pill activo">Módulo clínico activo</span></div><p class="subtitle">Consulta la información del paciente y su historial de citas odontológicas.</p></div>
+    <button class="btn btn-primary" type="button" (click)="agendarCita()"><span class="material-symbols-outlined">add</span> Nueva cita</button>
+  </header>
 
-  <!-- Header compacto + buscador pegajoso -->
-  <div class="page-header page-header-sticky d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-    <div class="header-text">
-      <h3 class="title mb-1">Historia Clínica</h3>
-      <p class="subtitle mb-0">Gestiona las historias clínicas digitales</p>
+  <section class="universal-search oc-card">
+    <div class="search-title"><span class="material-symbols-outlined">manage_search</span><div><h2>Búsqueda universal de expedientes</h2><p>Localiza pacientes por nombre, DPI, teléfono o correo.</p></div></div>
+    <div class="search-input-wrap"><span class="material-symbols-outlined">search</span><input type="search" placeholder="Buscar paciente por nombre, DPI o teléfono…" [ngModel]="searchQuery()" (ngModelChange)="onSearchChange($event)" (blur)="onSearchBlur()"><button type="button" *ngIf="searchQuery()" (click)="limpiarBusqueda()"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="search-results" *ngIf="mostrandoResultados()">
+      <button type="button" *ngFor="let paciente of pacientesEncontrados(); trackBy: trackByPacienteId" (mousedown)="seleccionarPaciente(paciente)"><span class="avatar">{{ initials(paciente) }}</span><span><strong>{{ paciente.nombres }} {{ paciente.apellidos }}</strong><small>{{ paciente.dpi ? 'DPI: ' + paciente.dpi : paciente.telefono }}</small></span><span class="material-symbols-outlined">arrow_forward</span></button>
+      <div class="no-results" *ngIf="!pacientesEncontrados().length && !buscando()">No encontramos pacientes con ese criterio.</div>
     </div>
+    <div class="searching" *ngIf="buscando()"><span class="spinner-border spinner-border-sm"></span> Buscando pacientes…</div>
+  </section>
 
-    <!-- Buscador inline -->
-    <div class="search-inline position-relative">
-      <div class="input-group">
-        <span class="input-group-text bg-white">
-          <i class="fa-solid fa-magnifying-glass"></i>
-        </span>
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Buscar por nombre, apellido, DPI o teléfono..."
-          [ngModel]="searchQuery()"
-          (ngModelChange)="onSearchChange($event)"
-          (blur)="onSearchBlur()"
-        />
-        @if (searchQuery()) {
-          <button class="btn btn-outline-secondary" type="button" (click)="limpiarBusqueda()">
-            <i class="fa-solid fa-times"></i>
-          </button>
-        }
-      </div>
+  <div class="alert alert-danger" *ngIf="error()">{{ error() }}</div>
 
-      <!-- Resultados -->
-      @if (mostrandoResultados() && pacientesEncontrados().length > 0) {
-        <div class="dropdown-menu d-block mt-1 w-100 shadow-sm">
-          @for (paciente of pacientesEncontrados(); track trackByPacienteId($index, paciente)) {
-            <button class="dropdown-item d-flex align-items-center gap-3 py-2"
-                    (click)="seleccionarPaciente(paciente)">
-              <div class="avatar-small">{{ initials(paciente) }}</div>
-              <div class="min-w-0">
-                <div class="fw-semibold text-truncate">{{ paciente.nombres }} {{ paciente.apellidos }}</div>
-                <div class="text-muted small">
-                  {{ paciente.telefono }} • {{ paciente.email || 'Sin email' }}
-                </div>
-              </div>
-            </button>
-          }
-        </div>
-      }
-
-      @if (buscando()) {
-        <div class="text-muted small mt-1">
-          <i class="fa-solid fa-spinner fa-spin me-1"></i> Buscando pacientes...
-        </div>
-      }
-
-      @if (mostrandoResultados() && pacientesEncontrados().length === 0 && !buscando()) {
-        <div class="text-muted small mt-1">No se encontraron pacientes con ese criterio.</div>
-      }
-    </div>
-  </div>
-
-  <!-- Error -->
-  @if (error()) {
-    <div class="alert alert-danger d-flex align-items-center" role="alert">
-      <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ error() }}
-    </div>
-  }
-
-  <!-- Contenido -->
-  @if (pacienteSeleccionado() && historiaClinica()) {
-    @let paciente = pacienteSeleccionado()!;
-    @let historia = historiaClinica()!;
-
-    <div class="row g-4">
-      <!-- Historial -->
-      <div class="col-lg-8">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white fw-bold d-flex flex-wrap gap-2 justify-content-between align-items-center">
-            <div>Historial de Citas</div>
-            <div class="d-flex gap-2 align-items-center">
-              <select class="form-select form-select-sm w-auto"
-                      [ngModel]="filtroEstado()"
-                      (ngModelChange)="filtroEstado.set($event)">
-                <option value="">Todos los estados</option>
-                <option value="NUEVA">Nueva</option>
-                <option value="CONFIRMADA">Confirmada</option>
-                <option value="PENDIENTE">Pendiente</option>
-                <option value="FINALIZADA">Finalizada</option>
-                <option value="CANCELADA">Cancelada</option>
-              </select>
-
-              <button class="btn btn-sm btn-outline-secondary" (click)="ordenDesc.set(!ordenDesc())" type="button">
-                <i class="fa-solid" [class.fa-arrow-down-short-wide]="ordenDesc()" [class.fa-arrow-up-short-wide]="!ordenDesc()"></i>
-                {{ ordenDesc() ? 'Recientes primero' : 'Antiguas primero' }}
-              </button>
-
-              <span class="badge bg-primary ms-auto">{{ historia.citas.length }} citas</span>
-            </div>
-          </div>
-
-          <div class="card-body p-0">
-            @if (historia.citas.length > 0) {
-              <div class="list-group list-group-flush cita-list">
-
-                @for (grupo of grupos(); track grupo.fechaISO) {
-
-                  <!-- Encabezado de fecha (colapsable) -->
-                  <div class="cita-date-header d-flex align-items-center justify-content-between"
-                       (click)="toggleGrupo(grupo.fechaISO)">
-                    <div><i class="fa-regular fa-calendar me-1"></i><strong>{{ formatFecha(grupo.fechaISO) }}</strong></div>
-                    <div class="text-muted small">
-                      {{ grupo.items.length }} citas
-                      <i class="fa-solid ms-1" [class.fa-chevron-up]="grupo.open" [class.fa-chevron-down]="!grupo.open"></i>
-                    </div>
-                  </div>
-
-                  <div [hidden]="!grupo.open">
-                    @for (cita of grupo.items; track trackByCitaId($index, cita)) {
-                      <div class="list-group-item py-2">
-                        <div class="d-flex justify-content-between align-items-start gap-2">
-                          <div class="min-w-0">
-                            <div class="fw-semibold text-truncate">
-                              {{ cita.motivo || 'Consulta dental' }}
-                            </div>
-                          </div>
-                          <span class="status-pill {{ statusClass(cita.status) }}">
-                            {{ etiquetaStatus(cita.status) }}
-                          </span>
-                        </div>
-
-                        @if (cita.notas) {
-                          <div class="mt-1">
-                            <div class="text-muted small">
-                              <span class="fw-medium">Notas:</span>
-                              <span [class.text-truncate-2]="!isExpanded(cita.id)">
-                                {{ cita.notas }}
-                              </span>
-                              @if (cita.notas.length > 120) {
-                                <span class="ms-1 link-more" (click)="toggleNote(cita.id)">
-                                  {{ isExpanded(cita.id) ? 'Ver menos' : 'Ver más' }}
-                                </span>
-                              }
-                            </div>
-                          </div>
-                        }
-
-                        <div class="mt-1 pt-2 border-top cita-meta">
-                          <i class="fa-regular fa-calendar me-1"></i>{{ formatFecha(cita.fechaISO) }}
-                          • <i class="fa-regular fa-clock ms-2 me-1"></i>{{ horaAMPM(cita.hora) }}
-                          <!-- ID oculto -->
-                        </div>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="text-center text-muted py-5">
-                <i class="fa-regular fa-calendar-xmark fa-2x mb-3 d-block"></i>
-                <p>No hay citas registradas para este paciente.</p>
-                <small class="text-muted">Las citas aparecerán aquí una vez que sean agendadas en el módulo de Agenda.</small>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Información del Paciente (pegajosa) -->
-      <div class="col-lg-4">
-        <div class="sidebar-sticky">
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white fw-bold">Información del Paciente</div>
-            <div class="card-body">
-              <div class="d-flex align-items-center gap-3 mb-4">
-                <div class="avatar-large">{{ initials(paciente) }}</div>
-                <div>
-                  <h6 class="mb-0 text-truncate">{{ paciente.nombres }} {{ paciente.apellidos }}</h6>
-                  <small class="text-muted">ID: {{ ('' + paciente.id).slice(0, 8) }}</small>
-                </div>
-              </div>
-
-              <div class="space-y-3">
-                <div>
-                  <label class="form-label small fw-medium mb-1">Teléfono</label>
-                  <div class="fw-semibold">{{ paciente.telefono }}</div>
-                </div>
-                <div>
-                  <label class="form-label small fw-medium mb-1">Email</label>
-                  <div class="fw-semibold text-truncate">{{ paciente.email || 'No registrado' }}</div>
-                </div>
-                <div>
-                  <label class="form-label small fw-medium mb-1">Fecha de Nacimiento</label>
-                  <div class="fw-semibold">{{ formatFecha(paciente.fechaNacimiento) }}</div>
-                </div>
-                <div>
-                  <label class="form-label small fw-medium mb-1">DPI</label>
-                  <div class="fw-semibold text-truncate">{{ paciente.dpi || 'No registrado' }}</div>
-                </div>
-                <div>
-                  <label class="form-label small fw-medium mb-1">Dirección</label>
-                  <div class="fw-semibold text-truncate">{{ paciente.direccion || 'No registrada' }}</div>
-                </div>
-                <div>
-                  <label class="form-label small fw-medium mb-1">Alergias</label>
-                  <div class="fw-semibold text-truncate">{{ paciente.alergias || 'Ninguna registrada' }}</div>
-                </div>
-                <div>
-                  <label class="form-label small fw-medium mb-1">Estado</label>
-                  <!-- Solo texto: Activo / Inactivo -->
-                  <div class="fw-semibold">{{ estadoTexto(paciente.estado) }}</div>
-                </div>
-                
-                <div>
-                  <label class="form-label small fw-medium mb-1">Fecha de Registro</label>
-                  <div class="fw-semibold">{{ formatFecha(paciente.createdAt) }}</div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-  } @else if (pacienteSeleccionado() && cargandoHistoria()) {
-    <!-- Loading -->
-    <div class="text-center py-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Cargando historia clínica...</span>
-      </div>
-      <p class="text-muted mt-3">Cargando historia clínica...</p>
-    </div>
-
-  } @else {
-    <!-- Empty -->
-    <div class="text-center py-5">
-      <i class="fa-regular fa-user fa-3x text-muted mb-3"></i>
-      <h4 class="text-muted">Selecciona un paciente</h4>
-      <p class="text-muted">Busca y selecciona un paciente para ver su historia clínica completa.</p>
-      <div class="mt-3">
-        <small class="text-muted">
-          <i class="fa-solid fa-lightbulb me-1"></i>
-          Tip: Puedes buscar por nombre, apellido, DPI o teléfono.
-        </small>
+  <section class="clinical-start" *ngIf="!pacienteSeleccionado() && !cargandoHistoria()">
+    <div class="recent-patients" *ngIf="pacientesRecientes().length">
+      <div class="section-heading"><div><h2>Pacientes recientes</h2><p>Selecciona un expediente para consultar su historia.</p></div><span>{{ pacientesRecientes().length }}</span></div>
+      <div class="recent-list">
+        <button type="button" *ngFor="let paciente of pacientesRecientes(); trackBy: trackByPacienteId" (click)="seleccionarPaciente(paciente)"><span class="avatar">{{ initials(paciente) }}</span><span><strong>{{ paciente.nombres }} {{ paciente.apellidos }}</strong><small>{{ paciente.dpi ? 'DPI: ' + paciente.dpi : paciente.telefono }}</small><em *ngIf="paciente.alergias"><span class="material-symbols-outlined">warning</span>Alergia registrada</em></span><span class="material-symbols-outlined">chevron_right</span></button>
       </div>
     </div>
-  }
+    <aside class="oc-card clinical-tools"><h2><span class="material-symbols-outlined">clinical_notes</span> Expediente digital</h2><article><span class="material-symbols-outlined">dentistry</span><div><strong>Historial odontológico</strong><p>Consulta citas, motivos, notas y estados de atención.</p></div></article><article><span class="material-symbols-outlined">verified_user</span><div><strong>Información protegida</strong><p>Los datos mostrados provienen del backend y respetan los permisos actuales.</p></div></article></aside>
+  </section>
+
+  <div class="clinical-loading" *ngIf="cargandoHistoria()"><section class="oc-card"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton tall"></div></section></div>
+
+  <ng-container *ngIf="historiaClinica() as historia">
+    <section class="patient-hero oc-card" *ngIf="historia.paciente.id">
+      <div class="patient-identity"><span class="avatar avatar-lg">{{ initials(historia.paciente) }}</span><div><div class="name-line"><h2>{{ historia.paciente.nombres }} {{ historia.paciente.apellidos }}</h2><span class="status-pill" [class.activo]="historia.paciente.estado === 'ACTIVO'" [class.inactivo]="historia.paciente.estado === 'INACTIVO'">{{ estadoTexto(historia.paciente.estado) }}</span></div><p>Expediente #{{ historia.paciente.id }} <span>•</span> {{ historia.paciente.dpi || 'DPI no registrado' }}</p><small><span class="material-symbols-outlined">phone</span>{{ historia.paciente.telefono }} <span *ngIf="historia.paciente.email">· {{ historia.paciente.email }}</span></small></div></div>
+      <div class="patient-actions"><button class="btn btn-light" type="button" (click)="verPerfilPaciente()"><span class="material-symbols-outlined">person</span> Ver perfil</button><button class="btn btn-primary" type="button" (click)="agendarCita()"><span class="material-symbols-outlined">add</span> Nueva cita</button></div>
+      <div class="allergy-alert" *ngIf="historia.paciente.alergias"><span class="material-symbols-outlined">warning</span><div><strong>Alerta médica relevante</strong><p>{{ historia.paciente.alergias }}</p></div></div>
+    </section>
+
+    <section class="clinical-metrics" *ngIf="historia.paciente.id"><article><span>Total de citas</span><strong>{{ historia.citas.length }}</strong><i class="material-symbols-outlined">clinical_notes</i></article><article><span>Finalizadas</span><strong>{{ contarEstadoHistoria(historia.citas, 'FINALIZADA') }}</strong><i class="material-symbols-outlined">check_circle</i></article><article><span>Próximas / activas</span><strong>{{ historia.citas.length - contarEstadoHistoria(historia.citas, 'FINALIZADA') - contarEstadoHistoria(historia.citas, 'CANCELADA') }}</strong><i class="material-symbols-outlined">event_upcoming</i></article></section>
+
+    <section class="history-card oc-card" *ngIf="historia.paciente.id">
+      <header><div><h2>Historial de citas y consultas</h2><p>Registro cronológico de atenciones asociadas al paciente.</p></div><div class="history-filters"><select class="form-select form-select-sm" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)"><option value="">Todos los estados</option><option value="NUEVA">Nueva</option><option value="PENDIENTE">Pendiente</option><option value="CONFIRMADA">Confirmada</option><option value="FINALIZADA">Finalizada</option><option value="CANCELADA">Cancelada</option></select><button class="btn btn-sm btn-light" type="button" (click)="ordenDesc.set(!ordenDesc())"><span class="material-symbols-outlined">swap_vert</span>{{ ordenDesc() ? 'Más recientes' : 'Más antiguas' }}</button></div></header>
+      <div class="history-timeline" *ngIf="grupos().length; else emptyHistory">
+        <article class="history-group" *ngFor="let grupo of grupos()">
+          <button class="date-toggle" type="button" (click)="toggleGrupo(grupo.fechaISO)"><span><span class="timeline-dot"></span><strong>{{ formatFecha(grupo.fechaISO) }}</strong><small>{{ grupo.items.length }} {{ grupo.items.length === 1 ? 'registro' : 'registros' }}</small></span><span class="material-symbols-outlined">{{ grupo.open ? 'expand_less' : 'expand_more' }}</span></button>
+          <div class="history-items" *ngIf="grupo.open"><article *ngFor="let cita of grupo.items; trackBy: trackByCitaId"><div class="history-item-head"><div><strong>{{ cita.motivo || 'Consulta odontológica' }}</strong><span class="status-pill" [ngClass]="statusClass(cita.status)">{{ etiquetaStatus(cita.status) }}</span></div><time>{{ horaAMPM(cita.hora) }}</time></div><div class="history-notes" *ngIf="cita.notas"><span>Notas / observaciones</span><p [class.clamped]="!isExpanded(cita.id)">{{ cita.notas }}</p><button type="button" (click)="toggleNote(cita.id)">{{ isExpanded(cita.id) ? 'Ver menos' : 'Ver más' }}</button></div></article></div>
+        </article>
+      </div>
+      <ng-template #emptyHistory><div class="empty-state"><span class="empty-state-icon"><span class="material-symbols-outlined">clinical_notes</span></span><h3>No hay consultas registradas</h3><p>Este expediente todavía no tiene citas asociadas con los filtros seleccionados.</p><button class="btn btn-primary btn-sm mt-3" type="button" (click)="agendarCita()">Programar primera cita</button></div></ng-template>
+    </section>
+  </ng-container>
 </div>
+

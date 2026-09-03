@@ -1,153 +1,23 @@
-<div class="page">
-  <div class="page-header">
-    <div>
-      <h1 class="title">Usuarios</h1>
-      <p class="subtitle">Crea usuarios y asigna roles</p>
-    </div>
+<div class="page users-page">
+  <header class="page-header"><div><p class="eyebrow">Configuración / Gestión de accesos</p><h1 class="title">Usuarios</h1><p class="subtitle">Administra personal, credenciales, roles y asignaciones clínicas.</p></div><button class="btn btn-primary" type="button" *ngIf="isAdmin()" (click)="openCrear()"><span class="material-symbols-outlined">person_add</span> Nuevo usuario</button></header>
 
-    <button class="btn btn-primary btn-new" (click)="openCrear()">
-      <i class="fa-solid fa-user-plus me-2"></i> Nuevo usuario
-    </button>
-  </div>
+  <section class="user-metrics"><article><span>Cuentas totales</span><strong>{{ usuarios().length }}</strong><i class="material-symbols-outlined">badge</i></article><article><span>Doctores</span><strong>{{ totalDoctores() }}</strong><i class="material-symbols-outlined">dentistry</i></article><article><span>Recepcionistas</span><strong>{{ totalRecepcionistas() }}</strong><i class="material-symbols-outlined">support_agent</i></article><article><span>Administradores</span><strong>{{ totalAdministradores() }}</strong><i class="material-symbols-outlined">admin_panel_settings</i></article></section>
 
-  <!-- Barra: buscador + filtro de rol -->
-  <div class="toolbar d-flex gap-3 mb-3">
-    <div class="flex-grow-1">
-      <div class="input-group">
-        <span class="input-group-text bg-white">
-          <i class="fa-solid fa-magnifying-glass"></i>
-        </span>
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Buscar por nombre, correo o rol…"
-          [ngModel]="search()"
-          (ngModelChange)="search.set($event)"
-        />
-      </div>
-    </div>
+  <section class="user-toolbar oc-card"><div class="search-box"><span class="material-symbols-outlined">search</span><input type="search" placeholder="Buscar por nombre, correo o rol" [ngModel]="search()" (ngModelChange)="setSearch($event)"></div><div class="role-filters"><button type="button" [class.active]="filtroRol() === 'TODOS'" (click)="setFiltroRol('TODOS')">Todos</button><button type="button" [class.active]="filtroRol() === 'ADMIN'" (click)="setFiltroRol('ADMIN')">Administrador</button><button type="button" [class.active]="filtroRol() === 'DOCTOR'" (click)="setFiltroRol('DOCTOR')">Doctor</button><button type="button" [class.active]="filtroRol() === 'RECEPCIONISTA'" (click)="setFiltroRol('RECEPCIONISTA')">Recepcionista</button></div></section>
 
-    <div class="dropdown">
-      <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-        {{ filtroRol() === 'TODOS' ? 'Todos los roles' : filtroRol() }}
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end">
-        <li><button class="dropdown-item" [class.active]="filtroRol() === 'TODOS'" (click)="setFiltroRol('TODOS')">Todos</button></li>
-        <li><button class="dropdown-item" [class.active]="filtroRol() === 'ADMIN'" (click)="setFiltroRol('ADMIN')">ADMIN</button></li>
-        <li><button class="dropdown-item" [class.active]="filtroRol() === 'DOCTOR'" (click)="setFiltroRol('DOCTOR')">DOCTOR</button></li>
-        <li><button class="dropdown-item" [class.active]="filtroRol() === 'RECEPCIONISTA'" (click)="setFiltroRol('RECEPCIONISTA')">RECEPCIONISTA</button></li>
-      </ul>
-    </div>
-  </div>
+  <div class="loading-table oc-card" *ngIf="cargando()"><div class="skeleton" *ngFor="let n of [1,2,3,4,5]"></div></div>
+  <section class="table-responsive users-table" *ngIf="!cargando() && listaFiltrada().length"><table class="table align-middle"><thead><tr><th>Usuario</th><th>Correo corporativo</th><th>Rol</th><th>Asignación clínica</th><th>Estado</th><th>Acciones</th></tr></thead><tbody><tr *ngFor="let u of listaFiltrada(); trackBy: trackById"><td><div class="user-cell"><span class="avatar">{{ initials(u) }}</span><span><strong>{{ u.nombre }} {{ u.apellido }}</strong><small>ID: {{ u.id }}</small></span></div></td><td><span class="email"><span class="material-symbols-outlined">mail</span>{{ u.email }}</span></td><td><span [class]="rolClass(u)">{{ u.rol }}</span></td><td><span *ngIf="u.rol === 'RECEPCIONISTA' && u.refreshToken; else ownAgenda">Doctor #{{ u.refreshToken }}</span><ng-template #ownAgenda>{{ u.rol === 'DOCTOR' ? 'Agenda propia' : 'Acceso general' }}</ng-template></td><td><span class="status-pill" [class.activo]="u.activo !== false" [class.inactivo]="u.activo === false">{{ u.activo === false ? 'Inactivo' : 'Activo' }}</span></td><td><div class="row-actions"><button class="icon-btn" type="button" title="Editar" (click)="openEditar(u)"><span class="material-symbols-outlined">edit</span></button><button class="icon-btn danger" type="button" title="Eliminar" *ngIf="isAdmin()" (click)="eliminar(u)"><span class="material-symbols-outlined">delete</span></button></div></td></tr></tbody></table></section>
+  <section class="oc-card empty-state" *ngIf="!cargando() && !listaFiltrada().length"><span class="empty-state-icon"><span class="material-symbols-outlined">manage_accounts</span></span><h3>No encontramos usuarios</h3><p>Ajusta el término de búsqueda o el filtro de rol.</p><button class="btn btn-light btn-sm mt-3" type="button" (click)="setSearch(''); setFiltroRol('TODOS')">Limpiar filtros</button></section>
 
-  <!-- Tabla -->
-  <table class="table align-middle mb-0">
-    <thead class="table-light">
-      <tr>
-        <th style="width: 40%">Usuario</th>
-        <th style="width: 30%">Correo</th>
-        <th style="width: 15%">Rol</th>
-        <th style="width: 15%">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let u of listaFiltrada(); trackBy: trackById">
-        <td>
-          <div class="d-flex align-items-center gap-3">
-            <div class="avatar">{{ initials(u) }}</div>
-            <div>
-              <div class="fw-semibold">{{ u.nombre }} {{ u.apellido }}</div>
-              <div class="text-muted small" *ngIf="u.creadoEn">Creado: {{ u.creadoEn | date:'dd/MM/yyyy' }}</div>
-            </div>
-          </div>
-        </td>
-        <td>{{ u.email }}</td>
-        <td><span [class]="rolClass(u)">{{ u.rol }}</span></td>
-        <td>
-          <div class="d-flex gap-2">
-            <button class="icon-btn" title="Editar" (click)="openEditar(u)">
-              <i class="fa-regular fa-pen-to-square"></i>
-            </button>
-            <button class="icon-btn text-danger" title="Eliminar" (click)="eliminar(u)">
-              <i class="fa-regular fa-trash-can"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-
-      <tr *ngIf="!listaFiltrada().length">
-        <td colspan="4" class="text-center text-muted py-4">Sin usuarios.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- =================== MODAL CREAR/EDITAR =================== -->
-  <div class="modal fade" tabindex="-1" #usrModal>
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form #f="ngForm" (ngSubmit)="submit(f)">
-          <div class="modal-header">
-            <h5 class="modal-title">
-              {{ editandoId ? "Editar usuario" : "Nuevo usuario" }}
-            </h5>
-            <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
-          </div>
-
-          <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Nombre *</label>
-                <input class="form-control" name="nombre" [(ngModel)]="form.nombre" required />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Apellido *</label>
-                <input class="form-control" name="apellido" [(ngModel)]="form.apellido" required />
-              </div>
-
-              <div class="col-12">
-                <label class="form-label">Correo *</label>
-                <input type="email" class="form-control" name="email" [(ngModel)]="form.email" required />
-              </div>
-
-              <div class="col-12" *ngIf="!editandoId">
-                <label class="form-label">Contraseña *</label>
-                <input type="password" class="form-control" name="password" [(ngModel)]="form.password" required minlength="6" />
-                <div class="form-text">Mínimo 6 caracteres.</div>
-              </div>
-
-              <div class="col-12" *ngIf="editandoId">
-                <label class="form-label">Cambiar contraseña (opcional)</label>
-                <input type="password" class="form-control" name="password" [(ngModel)]="form.password" minlength="6" />
-              </div>
-
-              <div class="col-12">
-                <label class="form-label">Rol *</label>
-                <select class="form-select" name="rol" [(ngModel)]="form.rol" required>
-                  <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
-                </select>
-              </div>
-              <div class="col-12" *ngIf="form.rol === 'RECEPCIONISTA'">
-                <label class="form-label">Doctor Asignado *</label>
-                <select class="form-select" name="refreshToken" [(ngModel)]="form.refreshToken" required>
-                  <option value="">Seleccione un doctor…</option>
-                  <option *ngFor="let d of listaDoctores" value="{{d.id}}">{{ d.nombre }} {{ d.apellido }} ({{ d.rol }})</option>
-                </select>
-              </div>                
-            </div>
-
-            <div class="text-danger small mt-2" *ngIf="formError()">
-              {{ formError() }}
-            </div>          
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-light" (click)="closeModal()">Cancelar</button>
-            <button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando()">
-              {{ creando() ? "Guardando…" : (editandoId ? "Guardar cambios" : "Crear usuario") }}
-            </button>
-          </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+  <section class="security-info"><article><span class="material-symbols-outlined">policy</span><div><strong>Control por roles</strong><p>Los permisos funcionales existentes se conservan para administrador, doctor y recepcionista.</p></div></article><article><span class="material-symbols-outlined">link</span><div><strong>Asignación clínica</strong><p>Recepcionistas continúan vinculándose al doctor seleccionado mediante el contrato actual.</p></div></article></section>
 </div>
+
+<div class="modal fade" tabindex="-1" #usrModal><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content"><form #f="ngForm" (ngSubmit)="submit(f)">
+  <div class="modal-header"><div class="modal-title-wrap"><span class="modal-title-icon material-symbols-outlined">manage_accounts</span><div><h5 class="modal-title">{{ editandoId ? 'Editar usuario' : 'Nuevo usuario' }}</h5><p>{{ editandoId ? 'Actualiza credenciales y privilegios.' : 'Crea una cuenta y asigna sus privilegios.' }}</p></div></div><button type="button" class="btn-close" (click)="closeModal()" aria-label="Cerrar"></button></div>
+  <div class="modal-body"><div class="row g-3"><div class="col-md-6"><label class="form-label">Nombre *</label><input class="form-control" name="nombre" [(ngModel)]="form.nombre" required></div><div class="col-md-6"><label class="form-label">Apellido *</label><input class="form-control" name="apellido" [(ngModel)]="form.apellido" required></div><div class="col-12"><label class="form-label">Correo electrónico *</label><input type="email" class="form-control" name="email" [(ngModel)]="form.email" required email></div><div class="col-12"><label class="form-label">{{ editandoId ? 'Nueva contraseña (opcional)' : 'Contraseña provisional *' }}</label><input type="password" class="form-control" name="password" [(ngModel)]="form.password" [required]="!editandoId" minlength="6"><div class="form-text">Mínimo 6 caracteres.</div></div></div>
+    <div class="role-section"><label>Rol del usuario *</label><div class="role-options"><label [class.selected]="form.rol === 'ADMIN'"><input type="radio" name="rol" [(ngModel)]="form.rol" value="ADMIN"><span class="material-symbols-outlined">admin_panel_settings</span><strong>Administrador</strong><small>Control general</small></label><label [class.selected]="form.rol === 'DOCTOR'"><input type="radio" name="rol" [(ngModel)]="form.rol" value="DOCTOR"><span class="material-symbols-outlined">dentistry</span><strong>Doctor</strong><small>Agenda y pacientes</small></label><label [class.selected]="form.rol === 'RECEPCIONISTA'"><input type="radio" name="rol" [(ngModel)]="form.rol" value="RECEPCIONISTA"><span class="material-symbols-outlined">support_agent</span><strong>Recepcionista</strong><small>Gestión de citas</small></label></div></div>
+    <div class="doctor-assignment" *ngIf="form.rol === 'RECEPCIONISTA'"><label class="form-label">Doctor asignado *</label><select class="form-select" name="refreshToken" [(ngModel)]="form.refreshToken" required><option value="">Selecciona un doctor</option><option *ngFor="let doctor of listaDoctores" [value]="doctor.id">{{ doctor.nombre }} {{ doctor.apellido }} ({{ doctor.rol }})</option></select><small>Esta relación se conserva en el campo utilizado por la lógica actual.</small></div>
+    <div class="alert alert-danger mt-3 mb-0" *ngIf="formError()">{{ formError() }}</div>
+  </div><div class="modal-footer"><button type="button" class="btn btn-light" (click)="closeModal()">Cancelar</button><button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando()">{{ creando() ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear usuario') }}</button></div>
+</form></div></div></div>
+

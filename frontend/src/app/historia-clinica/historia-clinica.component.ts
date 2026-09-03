@@ -1,8 +1,9 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HistoriaClinicaService, CitaConFecha, HistoriaClinica } from './historia-clinica.service';
-import { Paciente } from '../pacientes/pacientes.service';
+import { Paciente, PacientesService } from '../pacientes/pacientes.service';
 import { CitaStatus } from '../agenda/agenda.service';
 
 type GrupoCitas = { fechaISO: string; items: CitaConFecha[]; open: boolean };
@@ -16,6 +17,9 @@ type GrupoCitas = { fechaISO: string; items: CitaConFecha[]; open: boolean };
 })
 export class HistoriaClinicaComponent implements OnInit {
   private historiaSvc = inject(HistoriaClinicaService);
+  private pacientesSvc = inject(PacientesService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   // Estados
   buscando = signal(false);
@@ -25,6 +29,7 @@ export class HistoriaClinicaComponent implements OnInit {
   // Búsqueda
   searchQuery = signal('');
   pacientesEncontrados = signal<Paciente[]>([]);
+  pacientesRecientes = signal<Paciente[]>([]);
   mostrandoResultados = signal(false);
 
   // Datos seleccionados
@@ -88,7 +93,16 @@ export class HistoriaClinicaComponent implements OnInit {
     }));
   });
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.pacientesSvc.list().subscribe(pacientes => this.pacientesRecientes.set(pacientes.slice(0, 6)));
+    this.route.queryParamMap.subscribe(params => {
+      const id = params.get('pacienteId');
+      if (!id) return;
+      this.pacientesSvc.getById(id).subscribe(paciente => {
+        if (paciente) this.seleccionarPaciente(paciente);
+      });
+    });
+  }
 
   // ===== BÚSQUEDA =====
   onSearchChange(query: string) {
@@ -228,6 +242,10 @@ export class HistoriaClinicaComponent implements OnInit {
     return map[s] ?? 'pendiente';
   }
 
+  contarEstadoHistoria(citas: CitaConFecha[], estado: CitaStatus): number {
+    return citas.filter(cita => cita.status === estado).length;
+  }
+
   // === NUEVO: devolver solo el texto del estado
   estadoTexto(e: 'ACTIVO' | 'INACTIVO') {
     return e === 'ACTIVO' ? 'Activo' : 'Inactivo';
@@ -241,4 +259,11 @@ export class HistoriaClinicaComponent implements OnInit {
 
   trackByPacienteId = (_: number, paciente: Paciente) => paciente.id;
   trackByCitaId = (_: number, cita: CitaConFecha) => cita.id;
+
+  verPerfilPaciente(): void {
+    const paciente = this.pacienteSeleccionado();
+    if (paciente) this.router.navigate(['/pacientes', paciente.id]);
+  }
+
+  agendarCita(): void { this.router.navigate(['/agenda'], { queryParams: { nueva: 1 } }); }
 }

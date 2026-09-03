@@ -1,8 +1,10 @@
 import { Component, ElementRef, ViewChild, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AgendaService, CitaItem, CitaStatus } from '../agenda/agenda.service';
 import { PacientesService, Paciente, PacienteCreate, PacienteEstado } from '../pacientes/pacientes.service';
+import { AuthService } from '../core/auth.service';
 
 declare var bootstrap: any;
 
@@ -16,6 +18,8 @@ declare var bootstrap: any;
 export class DashboardComponent implements OnInit {
   private agendaSrv = inject(AgendaService);
   private pacientesSrv = inject(PacientesService);
+  private router = inject(Router);
+  private auth = inject(AuthService);
 
   // ======= Citas por fecha (filtro) =======
   citasFecha = signal<CitaItem[]>([]);
@@ -29,6 +33,8 @@ export class DashboardComponent implements OnInit {
 
   // métricas (solo cuentan citas no-DISPONIBLE)
   citasFechaCount = computed(() => this.citasFecha().filter(c => c.status !== 'DISPONIBLE').length);
+  citasConfirmadasCount = computed(() => this.citasFecha().filter(c => c.status === 'CONFIRMADA').length);
+  citasPendientesCount = computed(() => this.citasFecha().filter(c => c.status === 'PENDIENTE' || c.status === 'NUEVA').length);
 
   // lista ordenada y SIN “DISPONIBLE” (solo citas reales)
   citasFechaTop = computed(() =>
@@ -42,6 +48,33 @@ export class DashboardComponent implements OnInit {
   pacActivosCount   = computed(() => this.pacientes().filter(p => p.estado === 'ACTIVO').length);
   pacInactivosCount = computed(() => this.pacientes().filter(p => p.estado === 'INACTIVO').length);
   pacTotalCount     = computed(() => this.pacientes().length);
+  pacNuevosMesCount = computed(() => {
+    const now = new Date();
+    return this.pacientes().filter(p => {
+      if (!p.createdAt) return false;
+      const created = new Date(p.createdAt);
+      return created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth();
+    }).length;
+  });
+
+  get greeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Buenos días';
+    if (hour < 19) return 'Buenas tardes';
+    return 'Buenas noches';
+  }
+
+  get currentUserName(): string {
+    return this.auth.getCurrentUser()?.nombre ?? '';
+  }
+
+  get selectedDateLabel(): string {
+    const value = this.fechaFiltroInput();
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, (month || 1) - 1, day || 1).toLocaleDateString('es-GT', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+  }
 
   ngOnInit(): void {
     this.cargarCitasPorFecha(this.fechaFiltroKey());
@@ -175,8 +208,13 @@ export class DashboardComponent implements OnInit {
   trackByPacId = (_: number, it: Paciente) => it.id;
 
   irACrearPacienteDesdeCita() {
-    window.location.href = '/pacientes?nuevo=1&nombre=' + encodeURIComponent(this.pacienteTexto());
+    this.closeNuevaCita();
+    this.router.navigate(['/pacientes'], { queryParams: { nuevo: 1, nombre: this.pacienteTexto() } });
   }
+
+  verAgenda(): void { this.router.navigate(['/agenda']); }
+  verPacientes(): void { this.router.navigate(['/pacientes']); }
+  verHistoria(): void { this.router.navigate(['/historia-clinica']); }
 
   // ===== MÉTODOS PARA MODAL DE CITA =====
   openNuevaCita() {

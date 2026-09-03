@@ -9,11 +9,13 @@ interface LoginResponse {
   user?: any; // ajusta si tu API devuelve más campos
 }
 
-interface LoggedUser {
-  id: string;
+export interface LoggedUser {
+  id: string | number;
+  email?: string;
+  nombre?: string;
+  apellido?: string;
   rol?: string;
   refreshToken?: string;
-  // Otros campos relevantes del usuario logueado
 }
 
 @Injectable({ providedIn: 'root' })
@@ -74,6 +76,18 @@ export class AuthService {
       return user;
     } catch {
       return null;
+    }
+  }
+
+  updateStoredUser(changes: Partial<LoggedUser>): void {
+    const raw = localStorage.getItem('user');
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      parsed.user = { ...(parsed.user ?? {}), ...changes };
+      localStorage.setItem('user', JSON.stringify(parsed));
+    } catch {
+      // El guard solicitará un nuevo inicio de sesión si el almacenamiento está corrupto.
     }
   }
 }

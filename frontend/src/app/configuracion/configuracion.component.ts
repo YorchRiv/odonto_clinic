@@ -75,7 +75,7 @@ export class ConfiguracionComponent implements OnInit {
   openEditar(u: Usuario) {
   this.editandoId = u.id;
   this.formError.set('');
-  this.form = { nombre: u.nombre, apellido: u.apellido, email: u.email, password: '', rol: u.rol, refreshToken: null };
+  this.form = { nombre: u.nombre, apellido: u.apellido, email: u.email, password: '', rol: u.rol, refreshToken: u.refreshToken ?? null };
   this.ensureModal();
   this.modalRef.show();
   }
@@ -128,6 +128,13 @@ export class ConfiguracionComponent implements OnInit {
     }
     return arr;
   });
+
+  totalDoctores = computed(() => this.usuarios().filter(u => u.rol === 'DOCTOR').length);
+  totalRecepcionistas = computed(() => this.usuarios().filter(u => u.rol === 'RECEPCIONISTA').length);
+  totalAdministradores = computed(() => this.usuarios().filter(u => u.rol === 'ADMIN').length);
+  isAdmin = computed(() => this.auth.getCurrentUser()?.rol === 'ADMIN');
+
+  setSearch(value: string): void { this.search.set(value); }
 
   setFiltroRol(f: FiltroRol) { this.filtroRol.set(f); }
 

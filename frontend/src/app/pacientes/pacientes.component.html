@@ -1,248 +1,78 @@
-<div class="page">
-  <div class="page-header">
-    <div>
-      <h3 class="title">Pacientes</h3>
-      <p class="subtitle">Gestiona la información de tus pacientes</p>
+<div class="page patients-page">
+  <header class="page-header">
+    <div><div class="heading-row"><h1 class="title">Pacientes</h1><span class="status-pill activo">Base clínica activa</span></div><p class="subtitle">Gestiona expedientes, datos de contacto e historial de tus pacientes.</p></div>
+    <button class="btn btn-primary" type="button" (click)="openCrear()"><span class="material-symbols-outlined">person_add</span> Nuevo paciente</button>
+  </header>
+
+  <section class="patient-metrics">
+    <article><span>Total pacientes</span><strong>{{ pacientes().length }}</strong><i class="material-symbols-outlined">groups</i></article>
+    <article><span>Pacientes activos</span><strong>{{ totalActivos() }}</strong><i class="material-symbols-outlined">verified_user</i></article>
+    <article><span>Pacientes inactivos</span><strong>{{ totalInactivos() }}</strong><i class="material-symbols-outlined">person_off</i></article>
+  </section>
+
+  <section class="patient-toolbar oc-card">
+    <div class="search-box"><span class="material-symbols-outlined">search</span><input type="search" placeholder="Buscar por nombre, teléfono, correo o DPI" [ngModel]="search()" (ngModelChange)="setSearch($event)"></div>
+    <div class="segmented" aria-label="Filtrar pacientes">
+      <button type="button" [class.active]="filtro() === 'TODOS'" (click)="setFiltro('TODOS')">Todos <span>{{ pacientes().length }}</span></button>
+      <button type="button" [class.active]="filtro() === 'ACTIVOS'" (click)="setFiltro('ACTIVOS')">Activos <span>{{ totalActivos() }}</span></button>
+      <button type="button" [class.active]="filtro() === 'INACTIVOS'" (click)="setFiltro('INACTIVOS')">Inactivos <span>{{ totalInactivos() }}</span></button>
     </div>
+  </section>
 
-    <button class="btn btn-primary btn-new" (click)="openCrear()">
-      <i class="fa-solid fa-user-plus me-2"></i> Nuevo Paciente
-    </button>
-  </div>
+  <div class="loading-table oc-card" *ngIf="cargando()"><div class="skeleton" *ngFor="let n of [1,2,3,4,5]"></div></div>
 
-  <!-- Barra: buscador + filtro -->
-  <div class="toolbar d-flex gap-3 mb-3">
-    <div class="flex-grow-1">
-      <div class="input-group">
-        <span class="input-group-text bg-white">
-          <i class="fa-solid fa-magnifying-glass"></i>
-        </span>
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Buscar pacientes…"
-          [ngModel]="search()"
-          (ngModelChange)="search.set($event)"
-        />
-      </div>
-    </div>
+  <section class="table-responsive patients-table" *ngIf="!cargando() && listaFiltrada().length">
+    <table class="table align-middle">
+      <thead><tr><th>Paciente</th><th>Contacto</th><th>DPI / Documento</th><th>Fecha de nacimiento</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let p of listaPaginada(); trackBy: trackById" (dblclick)="verPerfil(p)">
+          <td><div class="patient-cell"><span class="avatar">{{ initials(p) }}</span><span><strong>{{ p.nombres }} {{ p.apellidos }}</strong><small>Expediente #{{ p.id }}</small><em *ngIf="p.alergias"><span class="material-symbols-outlined">warning</span>Alergia registrada</em></span></div></td>
+          <td><span class="contact-line"><span class="material-symbols-outlined">phone</span>{{ p.telefono }}</span><small>{{ p.email || 'Sin correo registrado' }}</small></td>
+          <td class="numeric">{{ p.dpi || '—' }}</td>
+          <td>{{ p.fechaNacimiento ? (p.fechaNacimiento | date:'dd MMM yyyy':'UTC') : '—' }}</td>
+          <td><span [class]="estadoClass(p)">{{ p.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span></td>
+          <td><div class="row-actions">
+            <button class="icon-btn" type="button" title="Ver perfil" (click)="verPerfil(p)"><span class="material-symbols-outlined">visibility</span></button>
+            <button class="icon-btn" type="button" title="Historia clínica" (click)="verHistoria(p)"><span class="material-symbols-outlined">clinical_notes</span></button>
+            <button class="icon-btn" type="button" title="Editar" (click)="openEditar(p)"><span class="material-symbols-outlined">edit</span></button>
+            <button class="icon-btn danger" type="button" title="Eliminar" (click)="eliminar(p)"><span class="material-symbols-outlined">delete</span></button>
+          </div></td>
+        </tr>
+      </tbody>
+    </table>
+    <footer class="table-footer"><span>Mostrando página {{ page() }} de {{ totalPages() }} · {{ listaFiltrada().length }} pacientes</span><div><button class="btn btn-sm btn-light" type="button" (click)="previousPage()" [disabled]="page() === 1">Anterior</button><span>{{ page() }} / {{ totalPages() }}</span><button class="btn btn-sm btn-light" type="button" (click)="nextPage()" [disabled]="page() >= totalPages()">Siguiente</button></div></footer>
+  </section>
 
-    <div class="dropdown">
-      <button
-        class="btn btn-outline-secondary dropdown-toggle"
-        data-bs-toggle="dropdown"
-      >
-        {{ filtroLabel() }}
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end">
-        <li>
-          <button
-            class="dropdown-item"
-            [class.active]="filtro() === 'TODOS'"
-            (click)="setFiltro('TODOS')"
-          >
-            Todos los pacientes
-          </button>
-        </li>
-        <li>
-          <button
-            class="dropdown-item"
-            [class.active]="filtro() === 'ACTIVOS'"
-            (click)="setFiltro('ACTIVOS')"
-          >
-            Activos
-          </button>
-        </li>
-        <li>
-          <button
-            class="dropdown-item"
-            [class.active]="filtro() === 'INACTIVOS'"
-            (click)="setFiltro('INACTIVOS')"
-          >
-            Inactivos
-          </button>
-        </li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- Tabla -->
-  <table class="table align-middle mb-0">
-    <thead class="table-light">
-      <tr>
-        <th style="width: 40%">Paciente</th>
-        <th style="width: 20%">Teléfono</th>
-        <th style="width: 25%">Email</th>
-        <th style="width: 10%">Estado</th>
-        <th style="width: 10%">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let p of listaFiltrada(); trackBy: trackById">
-        <td>
-          <div class="d-flex align-items-center gap-3">
-            <div class="avatar">{{ initials(p) }}</div>
-            <div>
-              <div class="fw-semibold">{{ p.nombres }} {{ p.apellidos }}</div>
-              <div class="text-muted small" *ngIf="p.dpi">DPI: {{ p.dpi }}</div>
-            </div>
-          </div>
-        </td>
-        <td>{{ p.telefono }}</td>
-        <td>{{ p.email || "—" }}</td>
-        <td>
-          <span [class]="estadoClass(p)">
-            {{ p.estado === "ACTIVO" ? "Activo" : "Inactivo" }}
-          </span>
-        </td>
-        <td>
-          <div class="d-flex gap-2">
-            <!-- Solo editar y eliminar -->
-            <button class="icon-btn" title="Editar" (click)="openEditar(p)">
-              <i class="fa-regular fa-pen-to-square"></i>
-            </button>
-            <button
-              class="icon-btn text-danger"
-              title="Eliminar"
-              (click)="eliminar(p)"
-            >
-              <i class="fa-regular fa-trash-can"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-
-      <tr *ngIf="!listaFiltrada().length">
-        <td colspan="5" class="text-center text-muted py-4">Sin pacientes.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- =================== MODAL CREAR/EDITAR =================== -->
-  <div class="modal fade" tabindex="-1" #pacModal>
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <form #f="ngForm" (ngSubmit)="submit(f)">
-          <div class="modal-header">
-            <h5 class="modal-title">
-              {{ editandoId ? "Editar paciente" : "Nuevo paciente" }}
-            </h5>
-            <button
-              type="button"
-              class="btn-close"
-              (click)="closeModal()"
-              aria-label="Close"
-            ></button>
-          </div>
-
-          <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Nombres *</label>
-                <input
-                  class="form-control"
-                  name="nombres"
-                  [(ngModel)]="form.nombres"
-                  required
-                />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Apellidos *</label>
-                <input
-                  class="form-control"
-                  name="apellidos"
-                  [(ngModel)]="form.apellidos"
-                  required
-                />
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Teléfono *</label>
-                <input
-                  class="form-control"
-                  name="telefono"
-                  [(ngModel)]="form.telefono"
-                  required
-                />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Email</label>
-                <input
-                  type="email"
-                  class="form-control"
-                  name="email"
-                  [(ngModel)]="form.email"
-                />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">DPI</label>
-                <input class="form-control" name="dpi" [(ngModel)]="form.dpi" />
-              </div>
-
-              <div class="col-md-8">
-                <label class="form-label">Dirección</label>
-                <input
-                  class="form-control"
-                  name="direccion"
-                  [(ngModel)]="form.direccion"
-                />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Fecha de nacimiento</label>
-                <input
-                  type="date"
-                  class="form-control"
-                  name="fechaNacimiento"
-                  [(ngModel)]="form.fechaNacimiento"
-                />
-              </div>
-
-              <div class="col-md-8">
-                <label class="form-label">Alergias</label>
-                <input
-                  class="form-control"
-                  name="alergias"
-                  [(ngModel)]="form.alergias"
-                />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Estado</label>
-                <select
-                  class="form-select"
-                  name="estado"
-                  [(ngModel)]="form.estado"
-                >
-                  <option value="ACTIVO">Activo</option>
-                  <option value="INACTIVO">Inactivo</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="text-danger small mt-2" *ngIf="formError()">
-              {{ formError() }}
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-light" (click)="closeModal()">
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="btn btn-primary"
-              [disabled]="f.invalid || creando()"
-            >
-              {{
-                creando()
-                  ? "Guardando…"
-                  : editandoId
-                  ? "Guardar cambios"
-                  : "Crear paciente"
-              }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+  <section class="oc-card empty-state" *ngIf="!cargando() && !listaFiltrada().length">
+    <span class="empty-state-icon"><span class="material-symbols-outlined">person_search</span></span>
+    <h3>{{ pacientes().length ? 'No encontramos resultados' : 'No hay pacientes registrados' }}</h3>
+    <p>{{ pacientes().length ? 'Prueba con otros términos o limpia los filtros aplicados.' : 'Comienza registrando a tu primer paciente para gestionar sus citas e historia clínica.' }}</p>
+    <button class="btn btn-primary mt-3" type="button" (click)="pacientes().length ? setSearch('') : openCrear()">{{ pacientes().length ? 'Limpiar búsqueda' : 'Registrar paciente' }}</button>
+  </section>
 </div>
+
+<div class="modal fade" tabindex="-1" #pacModal>
+  <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+    <form #f="ngForm" (ngSubmit)="submit(f)">
+      <div class="modal-header"><div class="modal-title-wrap"><span class="modal-title-icon material-symbols-outlined">{{ editandoId ? 'edit_square' : 'person_add' }}</span><div><h5 class="modal-title">{{ editandoId ? 'Editar paciente' : 'Nuevo paciente' }}</h5><p>{{ editandoId ? 'Actualiza la ficha clínica y los datos de contacto.' : 'Registra los datos clínicos y demográficos del paciente.' }}</p></div></div><button type="button" class="btn-close" (click)="closeModal()" aria-label="Cerrar"></button></div>
+      <div class="modal-body">
+        <section class="form-section"><h6><span>1</span> Información personal</h6><div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Nombres *</label><input class="form-control" name="nombres" [(ngModel)]="form.nombres" required></div>
+          <div class="col-md-6"><label class="form-label">Apellidos *</label><input class="form-control" name="apellidos" [(ngModel)]="form.apellidos" required></div>
+          <div class="col-md-6"><label class="form-label">DPI / Identificación oficial</label><input class="form-control" name="dpi" [(ngModel)]="form.dpi" placeholder="1234 56789 0101"></div>
+          <div class="col-md-6"><label class="form-label">Fecha de nacimiento</label><input type="date" class="form-control" name="fechaNacimiento" [(ngModel)]="form.fechaNacimiento"></div>
+        </div></section>
+        <section class="form-section"><h6><span>2</span> Contacto y datos clínicos</h6><div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Teléfono *</label><input class="form-control" name="telefono" [(ngModel)]="form.telefono" required></div>
+          <div class="col-md-6"><label class="form-label">Correo electrónico</label><input type="email" class="form-control" name="email" [(ngModel)]="form.email"></div>
+          <div class="col-md-8"><label class="form-label">Dirección</label><input class="form-control" name="direccion" [(ngModel)]="form.direccion"></div>
+          <div class="col-md-4"><label class="form-label">Estado</label><select class="form-select" name="estado" [(ngModel)]="form.estado"><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option></select></div>
+          <div class="col-12"><label class="form-label">Alergias</label><textarea class="form-control" rows="2" name="alergias" [(ngModel)]="form.alergias" placeholder="Alergias conocidas o indicación de que no tiene"></textarea></div>
+        </div></section>
+        <div class="alert alert-danger mt-3 mb-0" *ngIf="formError()">{{ formError() }}</div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-light" (click)="closeModal()">Cancelar</button><button type="submit" class="btn btn-primary" [disabled]="f.invalid || creando()">{{ creando() ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear paciente') }}</button></div>
+    </form>
+  </div></div>
+</div>
+

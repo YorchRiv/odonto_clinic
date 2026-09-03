@@ -9,7 +9,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { AgendaDia, AgendaService, CitaItem } from './agenda.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AgendaDia, AgendaService, CitaCalendario, CitaItem } from './agenda.service';
 import { PacientesService, Paciente } from '../pacientes/pacientes.service'; // ajusta ruta si es necesario
 import { AuthService } from '../core/auth.service';
 
@@ -33,6 +34,8 @@ type FiltroStatus =
   | 'FINALIZADA'
   | 'CANCELADA';
 
+type VistaAgenda = 'DIA' | 'SEMANA' | 'MES';
+
 @Component({
   selector: 'app-agenda',
   standalone: true,
@@ -44,6 +47,8 @@ export class AgendaComponent implements OnInit {
   private agendaSrv = inject(AgendaService);
   private pacSvc = inject(PacientesService);
   private auth = inject(AuthService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   // ===== Calendario =====
   hoy = new Date();
@@ -52,6 +57,11 @@ export class AgendaComponent implements OnInit {
 
   // ===== Datos del día =====
   agendaDelDia = signal<AgendaDia | null>(null);
+  citasRango = signal<CitaCalendario[]>([]);
+  cargandoRango = signal(false);
+  vista = signal<VistaAgenda>('DIA');
+  busqueda = signal('');
+  citaDetalle = signal<CitaItem | null>(null);
 
   // ===== Etiquetas UI =====
   etiquetaMes = computed(() =>
@@ -66,6 +76,21 @@ export class AgendaComponent implements OnInit {
   grillaCalendario = computed<DiaCalendario[][]>(() =>
     this.construirGrilla(this.mesRef(), this.seleccionado())
   );
+
+  diasSemana = computed(() => {
+    const selected = this.seleccionado();
+    const monday = new Date(selected);
+    const day = monday.getDay() || 7;
+    monday.setDate(monday.getDate() - day + 1);
+    return Array.from({ length: 7 }, (_, index) => new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + index));
+  });
+
+  etiquetaPeriodo = computed(() => {
+    if (this.vista() === 'DIA') return this.seleccionado().toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (this.vista() === 'MES') return this.seleccionado().toLocaleDateString('es-GT', { month: 'long', year: 'numeric' });
+    const days = this.diasSemana();
+    return `${days[0].toLocaleDateString('es-GT', { day: 'numeric', month: 'short' })} – ${days[6].toLocaleDateString('es-GT', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  });
 
   // ===== Filtro de estado =====
   filtroStatus = signal<FiltroStatus>('TODAS');
@@ -146,7 +171,9 @@ export class AgendaComponent implements OnInit {
   trackByPacId = (_: number, it: Paciente) => it.id;
 
   irACrearPaciente() {
-    window.location.href = '/pacientes?nuevo=1&nombre=' + encodeURIComponent(this.pacienteTexto());
+    this.router.navigate(['/pacientes'], {
+      queryParams: { nuevo: 1, nombre: this.pacienteTexto() },
+    });
   }
 
   // ===================== Ciclo de vida =====================
@@ -156,7 +183,18 @@ export class AgendaComponent implements OnInit {
     this.cargarAgendaDelDia(this.seleccionado());
 
     // cargar pacientes para el autocompletado
-    this.pacSvc.list().subscribe(arr => this.pacientes.set(arr));
+    const abrirNueva = this.route.snapshot.queryParamMap.get('nueva') === '1';
+    const pacienteId = this.route.snapshot.queryParamMap.get('pacienteId');
+    this.pacSvc.list().subscribe(arr => {
+      this.pacientes.set(arr);
+      if (abrirNueva) {
+        setTimeout(() => {
+          this.openNuevaCita();
+          const paciente = pacienteId ? arr.find(item => item.id === pacienteId) : undefined;
+          if (paciente) this.selectPaciente(paciente);
+        });
+      }
+    });
   }
 
   // ---------- helpers de fecha ----------
@@ -329,6 +367,89 @@ export class AgendaComponent implements OnInit {
     });
   }
 
+  setVista(view: VistaAgenda): void {
+    this.vista.set(view);
+    if (view === 'DIA') this.cargarAgendaDelDia(this.seleccionado());
+    else this.cargarRango();
+  }
+
+  irHoy(): void {
+    const today = new Date();
+    this.seleccionado.set(today);
+    this.mesRef.set(new Date(today.getFullYear(), today.getMonth(), 1));
+    this.dateInput = this.toYMD(today);
+    this.vista() === 'DIA' ? this.cargarAgendaDelDia(today) : this.cargarRango();
+  }
+
+  navegarPeriodo(direction: -1 | 1): void {
+    const selected = this.seleccionado();
+    const next = new Date(selected);
+    if (this.vista() === 'DIA') next.setDate(next.getDate() + direction);
+    else if (this.vista() === 'SEMANA') next.setDate(next.getDate() + direction * 7);
+    else next.setMonth(next.getMonth() + direction);
+    this.seleccionado.set(next);
+    this.mesRef.set(new Date(next.getFullYear(), next.getMonth(), 1));
+    this.dateInput = this.toYMD(next);
+    this.vista() === 'DIA' ? this.cargarAgendaDelDia(next) : this.cargarRango();
+  }
+
+  itemsParaFecha(date: Date | null): CitaCalendario[] {
+    if (!date) return [];
+    const key = this.formateaFechaKey(date);
+    const filter = this.filtroStatus();
+    const query = this.busqueda().trim().toLowerCase();
+    return this.citasRango().filter(item => item.fechaISO === key)
+      .filter(item => filter === 'TODAS' || item.status === filter)
+      .filter(item => !query || `${item.paciente ?? ''} ${item.motivo ?? ''}`.toLowerCase().includes(query));
+  }
+
+  citasVisibles(): CitaItem[] {
+    const source = this.vista() === 'DIA' ? (this.agendaDelDia()?.items ?? []) : this.citasRango();
+    const filter = this.filtroStatus();
+    const query = this.busqueda().trim().toLowerCase();
+    return source.filter(item => item.status !== 'DISPONIBLE')
+      .filter(item => filter === 'TODAS' || item.status === filter)
+      .filter(item => !query || `${item.paciente ?? ''} ${item.motivo ?? ''}`.toLowerCase().includes(query));
+  }
+
+  contarEstado(status: CitaItem['status']): number {
+    const source = this.vista() === 'DIA' ? (this.agendaDelDia()?.items ?? []) : this.citasRango();
+    return source.filter(item => item.status === status).length;
+  }
+
+  elegirDiaMes(celda: DiaCalendario): void {
+    if (!celda.date) return;
+    this.seleccionado.set(celda.date);
+    this.dateInput = this.toYMD(celda.date);
+    this.setVista('DIA');
+  }
+
+  abrirDetalle(item: CitaItem): void { this.citaDetalle.set(item); }
+  cerrarDetalle(): void { this.citaDetalle.set(null); }
+
+  editarDesdeDetalle(item: CitaItem): void {
+    this.cerrarDetalle();
+    this.openEditarCita(item);
+  }
+
+  private cargarRango(): void {
+    let start: Date;
+    let end: Date;
+    if (this.vista() === 'SEMANA') {
+      const days = this.diasSemana();
+      start = days[0]; end = days[6];
+    } else {
+      const selected = this.seleccionado();
+      start = new Date(selected.getFullYear(), selected.getMonth(), 1);
+      end = new Date(selected.getFullYear(), selected.getMonth() + 1, 0);
+    }
+    this.cargandoRango.set(true);
+    this.agendaSrv.getAgendaRango(start, end).subscribe({
+      next: items => { this.citasRango.set(items); this.cargandoRango.set(false); },
+      error: () => { this.citasRango.set([]); this.cargandoRango.set(false); }
+    });
+  }
+
   // ---------- construir grilla ----------
   private construirGrilla(mesRef: Date, seleccionado: Date): DiaCalendario[][] {
     const y = mesRef.getFullYear(), m = mesRef.getMonth();
@@ -369,7 +490,10 @@ export class AgendaComponent implements OnInit {
     const fechaKey = this.formateaFechaKey(this.seleccionado());
     this.agendaSrv
       .actualizarEstado(id, status, fechaKey)
-      .subscribe(() => this.cargarAgendaDelDia(this.seleccionado()));
+      .subscribe(() => {
+        this.citaDetalle.update(item => item?.id === id ? { ...item, status } : item);
+        this.vista() === 'DIA' ? this.cargarAgendaDelDia(this.seleccionado()) : this.cargarRango();
+      });
   }
 
   eliminarCita(id: string) {
@@ -382,7 +506,10 @@ export class AgendaComponent implements OnInit {
     const fechaKey = this.formateaFechaKey(this.seleccionado());
     this.agendaSrv
       .eliminarCita(fechaKey, id)
-      .subscribe(() => this.cargarAgendaDelDia(this.seleccionado()));
+      .subscribe(() => {
+        this.cerrarDetalle();
+        this.vista() === 'DIA' ? this.cargarAgendaDelDia(this.seleccionado()) : this.cargarRango();
+      });
   }
 
   trackById = (_: number, it: CitaItem) => it.id;

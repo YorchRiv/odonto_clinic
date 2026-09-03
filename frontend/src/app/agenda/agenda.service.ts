@@ -30,6 +30,10 @@ export interface AgendaDia {
   items: CitaItem[];
 }
 
+export interface CitaCalendario extends CitaItem {
+  fechaISO: string;
+}
+
 type PacienteRow = {
   id?: number | string;
   nombres?: string;
@@ -183,6 +187,31 @@ export class AgendaService {
       }),
       switchMap(items => this.enrichWithPacientes(items)),
       map(items => ({ fechaISO, items }))
+    );
+  }
+
+  /** Obtiene las citas reales del usuario para un rango sin repetir llamadas por día. */
+  getAgendaRango(desde: Date, hasta: Date): Observable<CitaCalendario[]> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) throw new Error('Usuario no logueado');
+
+    const usuarioId = currentUser.rol === 'RECEPCIONISTA' && currentUser.refreshToken
+      ? Number(currentUser.refreshToken)
+      : Number(currentUser.id);
+    const start = new Date(desde.getFullYear(), desde.getMonth(), desde.getDate()).getTime();
+    const end = new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate(), 23, 59, 59).getTime();
+
+    return this.http.get<any[]>(`${this.baseUrl}/citas`).pipe(
+      map(rows => (rows ?? [])
+        .filter(row => Number(row?.usuarioId) === usuarioId)
+        .filter(row => {
+          const time = new Date(row?.fecha).getTime();
+          return time >= start && time <= end;
+        })
+        .map(row => ({ ...this.mapRowToItem(row), fechaISO: this.toISO_ddMMyyyy(new Date(row.fecha)) } as CitaCalendario))
+      ),
+      switchMap(items => this.enrichWithPacientes(items).pipe(map(enriched => enriched as CitaCalendario[]))),
+      map(items => items.sort((a, b) => `${a.fechaISO} ${a.hora}`.localeCompare(`${b.fechaISO} ${b.hora}`)))
     );
   }
 

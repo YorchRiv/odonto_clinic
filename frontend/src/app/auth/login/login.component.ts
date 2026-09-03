@@ -20,6 +20,7 @@ export class LoginComponent {
   loading = false;
   errorMsg = '';
   showPassword = false;
+  readonly currentYear = new Date().getFullYear();
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],

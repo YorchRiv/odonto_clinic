@@ -1,160 +1,27 @@
-<div class="rep-wrap">
-  <!-- Header -->
-  <div class="rep-header">
-    <div>
-      <h3 class="title">Reportes</h3>
-      <p class="subtitle">Selecciona tipo, filtra, previsualiza y exporta.</p>
-    </div>
-    <div class="export-buttons">
-      <button class="btn btn-sm btn-outline" (click)="exportPDF()" [disabled]="!columnas().length">PDF</button>
-      <button class="btn btn-sm btn-outline" (click)="exportExcel()" [disabled]="!columnas().length">Excel</button>
-      <button class="btn btn-sm btn-outline" (click)="exportCSV()" [disabled]="!columnas().length">CSV</button>
-    </div>
-  </div>
+<div class="page reports-page">
+  <header class="page-header"><div><div class="heading-row"><h1 class="title">Reportes</h1><span class="status-pill activo">Datos en tiempo real</span></div><p class="subtitle">Analiza, filtra y exporta información consolidada de la clínica dental.</p></div></header>
 
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab" [class.active]="tab()==='PACIENTES'" (click)="tab.set('PACIENTES')">Pacientes</button>
-    <button class="tab" [class.active]="tab()==='CITAS'" (click)="tab.set('CITAS')">Citas</button>
-    <button class="tab" [class.active]="tab()==='CLINICOS'" (click)="tab.set('CLINICOS')">Clínicos</button>
-  </div>
+  <nav class="report-tabs" aria-label="Tipo de reporte">
+    <button type="button" [class.active]="tab() === 'PACIENTES'" (click)="tab.set('PACIENTES')"><span class="material-symbols-outlined">groups</span>Pacientes</button>
+    <button type="button" [class.active]="tab() === 'CITAS'" (click)="tab.set('CITAS')"><span class="material-symbols-outlined">calendar_month</span>Citas</button>
+    <button type="button" [class.active]="tab() === 'CLINICOS'" (click)="tab.set('CLINICOS')"><span class="material-symbols-outlined">clinical_notes</span>Clínicos</button>
+  </nav>
 
-  <!-- Filtros -->
-  <div class="card">
-    <!-- PACIENTES -->
-    <div *ngIf="tab()==='PACIENTES'" class="filters">
-      <div class="row">
-        <div class="col">
-          <label>Tipo</label>
-          <select [ngModel]="repPac()" (ngModelChange)="repPac.set($event)" [ngModelOptions]="{standalone:true}">
-            <option value="GENERAL">Reporte General</option>
-            <option value="INDIVIDUAL">Reporte Individual</option>
-          </select>
-        </div>
+  <section class="filter-card oc-card">
+    <header><h2><span class="material-symbols-outlined">tune</span> Filtros de generación</h2><button type="button" (click)="generar()"><span class="material-symbols-outlined">refresh</span>Actualizar</button></header>
+    <div class="filters" *ngIf="tab() === 'PACIENTES'"><div class="filter-field"><label>Tipo de reporte</label><select class="form-select" [ngModel]="repPac()" (ngModelChange)="repPac.set($event)" [ngModelOptions]="{standalone:true}"><option value="GENERAL">Listado general de pacientes</option><option value="INDIVIDUAL">Expediente individual</option></select></div><div class="filter-field patient-filter" *ngIf="repPac() === 'INDIVIDUAL'"><label>Paciente</label><div class="input-icon"><span class="material-symbols-outlined">search</span><input class="form-control" type="text" [value]="pacienteQuery()" (input)="onPacienteInput($any($event.target).value)" (blur)="blurPaciente()" placeholder="Buscar paciente"></div><ul class="suggestions" *ngIf="showSugerencias()"><li *ngFor="let p of sugerencias" (mousedown)="selectPaciente(p)"><strong>{{ p.nombres }} {{ p.apellidos }}</strong><small>{{ p.telefono }}</small></li></ul></div></div>
+    <div class="filters" *ngIf="tab() === 'CITAS'"><div class="filter-field"><label>Tipo de reporte</label><select class="form-select" [ngModel]="repCitas()" (ngModelChange)="repCitas.set($event)" [ngModelOptions]="{standalone:true}"><option value="DIARIO">Citas diarias</option><option value="SEMANAL">Citas semanales</option><option value="MENSUAL">Citas mensuales</option></select></div><div class="filter-field"><label>Desde</label><input class="form-control" type="date" [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" [ngModelOptions]="{standalone:true}"></div><div class="filter-field"><label>Hasta</label><input class="form-control" type="date" [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" [disabled]="repCitas() !== 'SEMANAL'" [ngModelOptions]="{standalone:true}"></div><div class="filter-field"><label>Estado</label><select class="form-select" [ngModel]="estadoCita()" (ngModelChange)="estadoCita.set($event)" [ngModelOptions]="{standalone:true}"><option value="TODAS">Todos los estados</option><option value="NUEVA">Nueva</option><option value="PENDIENTE">Pendiente</option><option value="CONFIRMADA">Confirmada</option><option value="FINALIZADA">Finalizada</option><option value="CANCELADA">Cancelada</option></select></div></div>
+    <div class="filters" *ngIf="tab() === 'CLINICOS'"><div class="filter-field patient-filter"><label>Paciente</label><div class="input-icon"><span class="material-symbols-outlined">search</span><input class="form-control" type="text" [value]="pacienteQuery()" (input)="onPacienteInput($any($event.target).value)" (blur)="blurPaciente()" placeholder="Buscar paciente"></div><ul class="suggestions" *ngIf="showSugerencias()"><li *ngFor="let p of sugerencias" (mousedown)="selectPaciente(p)"><strong>{{ p.nombres }} {{ p.apellidos }}</strong><small>{{ p.telefono }}</small></li></ul></div></div>
+    <footer><span>Los reportes se construyen con los registros reales disponibles.</span><button class="btn btn-primary" type="button" (click)="generar()" [disabled]="cargando()"><span class="material-symbols-outlined">analytics</span>{{ cargando() ? 'Generando…' : 'Generar reporte' }}</button></footer>
+  </section>
 
-        <div class="col" *ngIf="repPac()==='INDIVIDUAL'">
-          <label>Paciente</label>
-          <input
-            type="text"
-            [value]="pacienteQuery()"
-            (input)="onPacienteInput($any($event.target).value)"
-            (blur)="blurPaciente()"
-            placeholder="Buscar paciente"
-          />
-          <ul class="sugerencias" *ngIf="showSugerencias()">
-            <li *ngFor="let p of sugerencias" (click)="selectPaciente(p)">
-              <strong>{{ p.nombres }} {{ p.apellidos }}</strong>
-              <small> · {{ p.telefono }}</small>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+  <section class="report-metrics" *ngIf="tab() === 'PACIENTES'"><article><span>Total pacientes</span><strong>{{ pacientes().length }}</strong><i class="material-symbols-outlined">groups</i></article><article><span>Activos</span><strong>{{ pacientesActivos() }}</strong><i class="material-symbols-outlined">person_check</i></article><article><span>Inactivos</span><strong>{{ pacientesInactivos() }}</strong><i class="material-symbols-outlined">person_off</i></article></section>
 
-    <!-- CITAS -->
-    <div *ngIf="tab()==='CITAS'" class="filters">
-      <div class="row">
-        <div class="col">
-          <label>Tipo</label>
-          <select
-            [ngModel]="repCitas()"
-            (ngModelChange)="repCitas.set($event); generar()"
-            [ngModelOptions]="{standalone:true}">
-            <option value="DIARIO">Citas Diarias</option>
-            <option value="SEMANAL">Citas Semanales</option>
-            <option value="MENSUAL">Citas Mensuales</option>
-          </select>
-        </div>
-
-        <div class="col">
-          <label>Desde</label>
-          <input
-            type="date"
-            [ngModel]="fechaDesde()"
-            (ngModelChange)="fechaDesde.set($event); generar()"
-            [ngModelOptions]="{standalone:true}"
-          />
-        </div>
-
-        <div class="col" [class.disabled]="repCitas()==='DIARIO' || repCitas()==='MENSUAL'">
-          <label>Hasta</label>
-          <input
-            type="date"
-            [ngModel]="fechaHasta()"
-            (ngModelChange)="fechaHasta.set($event); generar()"
-            [disabled]="repCitas()==='DIARIO' || repCitas()==='MENSUAL'"
-            [ngModelOptions]="{standalone:true}"
-          />
-        </div>
-
-        <div class="col">
-          <label>Estado</label>
-          <select
-            [ngModel]="estadoCita()"
-            (ngModelChange)="estadoCita.set($event); generar()"
-            [ngModelOptions]="{standalone:true}">
-            <option value="TODAS">Todos los estados</option>
-            <option value="NUEVA">Nueva</option>
-            <option value="PENDIENTE">Pendiente</option>
-            <option value="CONFIRMADA">Confirmada</option>
-            <option value="FINALIZADA">Finalizada</option>
-            <option value="CANCELADA">Cancelada</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- CLÍNICOS (solo historial individual) -->
-    <div *ngIf="tab()==='CLINICOS'" class="filters">
-      <div class="row">
-        <div class="col">
-          <label>Paciente</label>
-          <input
-            type="text"
-            [value]="pacienteQuery()"
-            (input)="onPacienteInput($any($event.target).value)"
-            (blur)="blurPaciente()"
-            placeholder="Buscar paciente"
-          />
-          <ul class="sugerencias" *ngIf="showSugerencias()">
-            <li *ngFor="let p of sugerencias" (click)="selectPaciente(p)">
-              <strong>{{ p.nombres }} {{ p.apellidos }}</strong>
-              <small> · {{ p.telefono }}</small>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button class="btn primary" (click)="generar()">
-        {{ cargando() ? 'Generando...' : 'Generar reporte' }}
-      </button>
-    </div>
-  </div>
-
-  <!-- Vista previa -->
-  <div class="card">
-    <div class="preview-head">
-      <h3>{{ tituloReporte() }}</h3>
-      <span class="hint" *ngIf="!columnas().length && !cargando()">Genera un reporte para ver la previsualización.</span>
-    </div>
-
-    <div class="table-wrap" *ngIf="columnas().length">
-      <table class="table">
-        <thead>
-          <tr>
-            <th *ngFor="let c of columnas()">{{ c }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let r of filas()">
-            <td *ngFor="let c of columnas()">{{ r[c] }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="loader" *ngIf="cargando()">Generando datos…</div>
-  </div>
+  <section class="preview-card oc-card">
+    <header><div><h2>{{ tituloReporte() }}</h2><p>{{ filas().length }} registros encontrados</p></div><div class="export-actions"><span>Exportar:</span><button type="button" (click)="exportPDF()" [disabled]="!columnas().length"><span class="material-symbols-outlined pdf">picture_as_pdf</span>PDF</button><button type="button" (click)="exportExcel()" [disabled]="!columnas().length"><span class="material-symbols-outlined excel">table_view</span>Excel</button><button type="button" (click)="exportCSV()" [disabled]="!columnas().length"><span class="material-symbols-outlined">csv</span>CSV</button></div></header>
+    <div class="report-loader" *ngIf="cargando()"><div class="skeleton" *ngFor="let n of [1,2,3,4]"></div></div>
+    <div class="table-responsive report-table" *ngIf="columnas().length && !cargando()"><table class="table"><thead><tr><th *ngFor="let column of columnas()">{{ column }}</th></tr></thead><tbody><tr *ngFor="let row of filas()"><td *ngFor="let column of columnas()"><span *ngIf="isStatusColumn(column); else normalCell" [class]="statusClass(row[column])">{{ row[column] }}</span><ng-template #normalCell>{{ row[column] }}</ng-template></td></tr></tbody></table></div>
+    <div class="empty-state" *ngIf="!columnas().length && !cargando()"><span class="empty-state-icon"><span class="material-symbols-outlined">query_stats</span></span><h3>No hay datos para los filtros seleccionados</h3><p>Ajusta los parámetros y genera nuevamente el reporte.</p></div>
+  </section>
 </div>
+

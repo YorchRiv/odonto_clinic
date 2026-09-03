@@ -1,71 +1,15 @@
-/* color #167EB5 acorde al navbar y al sidebar ctrl + shift + l sobre el texto para modificar todas sus coincidencias */
-/* Avatares */
-.avatar-small {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #167EB5 100%);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-weight: 600; font-size: 12px;
-}
-.avatar-large {
-  width: 56px; height: 56px; border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #167EB5 100%);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-weight: 600; font-size: 18px;
-}
-
-/* Header + buscador inline (pegajoso) */
-.page-header { margin-bottom: 1rem; }
-.page-header-sticky {
-  position: sticky;
-  top: 58px; /* ajusta según altura de tu navbar */
-  z-index: 2;
-  background: #fff;
-  padding: .5rem 0;
-  box-shadow: 0 1px 0 rgba(0,0,0,.06);
-}
-.search-inline { min-width: 320px; max-width: 520px; }
-.search-inline .dropdown-menu { max-height: 300px; overflow-y: auto; }
-
-/* Sidebar pegajoso */
-@media (min-width: 992px) {
-  .sidebar-sticky {
-    position: sticky;
-    top: 78px; /* navbar + header */
-  }
-}
-
-/* Lista compacta */
-.cita-list .list-group-item { padding: .6rem .85rem; }
-
-/* Encabezado de fecha discreto y pegajoso */
-.cita-date-header {
-  padding: .35rem .85rem;
-  font-size: 0.9rem;
-  color: #374151;
-  background: #fafafa;
-  position: sticky;
-  top: 106px; /* navbar + header */
-  z-index: 1;
-  border-bottom: 1px solid #eee;
-}
-
-/* Meta en una sola línea */
-.cita-meta { font-size: .85rem; color: #6b7280; }
-
-/* Enlaces ver más */
-.link-more { font-size: .85rem; cursor: pointer; text-decoration: underline; }
-
-/* Utilidades */
-.space-y-3 > * + * { margin-top: 0.75rem; }
-.text-truncate-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .search-inline { width: 100%; max-width: none; }
-  .avatar-large { width: 48px; height: 48px; font-size: 16px; }
-}
+.heading-row, .name-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.clinical-page .page-header .btn, .patient-actions .btn, .history-filters .btn { display: inline-flex; align-items: center; gap: 7px; }
+.universal-search { position: relative; display: grid; grid-template-columns: minmax(220px,.65fr) minmax(360px,1.35fr); gap: 18px; align-items: center; margin-bottom: 24px; padding: 22px; background: radial-gradient(circle at 100% 50%, rgba(45,212,191,.12), transparent 32%), #fff; }
+.search-title { display: flex; align-items: center; gap: 12px; }.search-title > .material-symbols-outlined { display: flex; width: 38px; height: 38px; flex: 0 0 38px; align-items: center; justify-content: center; border-radius: 9px; background: var(--oc-surface-soft); color: var(--oc-primary); }.search-title h2, .search-title p { margin: 0; }.search-title h2 { font-size: 16px; }.search-title p { margin-top: 3px; color: var(--oc-text-muted); font-size: 11px; }
+.search-input-wrap { display: flex; height: 52px; align-items: center; gap: 10px; border: 5px solid var(--oc-surface-soft); border-radius: 12px; padding: 0 12px; background: #fff; }.search-input-wrap > .material-symbols-outlined { color: var(--oc-primary); }.search-input-wrap input { min-width: 0; flex: 1; border: 0; outline: 0; font-size: 15px; }.search-input-wrap button { display: flex; border: 0; background: transparent; color: var(--oc-text-muted); }
+.search-results { position: absolute; top: calc(100% - 8px); right: 22px; z-index: 20; width: calc(66% - 22px); overflow: hidden; border: 1px solid var(--oc-border); border-radius: 10px; background: #fff; box-shadow: var(--oc-shadow-popover); }.search-results button { display: flex; width: 100%; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid #f1f5f9; padding: 10px 12px; background: #fff; text-align: left; }.search-results button:hover { background: #f8fafc; }.search-results button > span:nth-child(2) { flex: 1; }.search-results strong, .search-results small { display: block; }.search-results small { color: var(--oc-text-muted); font-size: 10px; }.no-results { padding: 18px; color: var(--oc-text-muted); text-align: center; }.searching { position: absolute; top: calc(100% + 5px); right: 22px; color: var(--oc-text-muted); font-size: 11px; }
+.clinical-start { display: grid; grid-template-columns: minmax(0,1.8fr) minmax(260px,.7fr); gap: 24px; }.section-heading { display: flex; align-items: flex-start; justify-content: space-between; margin: 0 4px 14px; }.section-heading h2, .section-heading p { margin: 0; }.section-heading h2 { font-size: 18px; }.section-heading p { margin-top: 3px; color: var(--oc-text-muted); font-size: 12px; }.section-heading > span { border-radius: 999px; padding: 4px 9px; background: var(--oc-surface-strong); color: var(--oc-primary); font-size: 11px; }
+.recent-list { display: grid; gap: 12px; }.recent-list button { display: flex; min-height: 88px; align-items: center; gap: 13px; border: 1px solid var(--oc-border); border-radius: 12px; padding: 14px 16px; background: #fff; color: var(--oc-text); text-align: left; }.recent-list button:hover { border-color: var(--oc-border-strong); box-shadow: var(--oc-shadow); }.recent-list button > span:nth-child(2) { flex: 1; }.recent-list strong, .recent-list small { display: block; }.recent-list small { margin-top: 3px; color: var(--oc-text-muted); font-size: 11px; }.recent-list em { display: inline-flex; align-items: center; gap: 3px; margin-top: 5px; border-radius: 4px; padding: 2px 5px; background: #fee2e2; color: #b91c1c; font-size: 9px; font-style: normal; }.recent-list em .material-symbols-outlined { font-size: 11px; }.recent-list button > .material-symbols-outlined { color: var(--oc-text-disabled); }
+.clinical-tools { padding: 20px; }.clinical-tools h2 { display: flex; align-items: center; gap: 9px; margin: 0 0 16px; font-size: 17px; }.clinical-tools article { display: flex; gap: 11px; border-radius: 9px; padding: 13px; background: var(--oc-surface-soft); }.clinical-tools article + article { margin-top: 10px; }.clinical-tools article > .material-symbols-outlined { color: var(--oc-primary); }.clinical-tools strong { font-size: 12px; }.clinical-tools p { margin: 3px 0 0; color: var(--oc-text-muted); font-size: 10px; }
+.clinical-loading section { display: grid; gap: 16px; padding: 22px; }.clinical-loading .skeleton { height: 52px; }.clinical-loading .tall { height: 300px; }
+.patient-hero { display: grid; grid-template-columns: 1fr auto; gap: 18px; margin-bottom: 18px; padding: 22px; }.patient-identity { display: flex; align-items: center; gap: 15px; }.name-line h2 { margin: 0; font-size: 22px; }.patient-identity p { margin: 5px 0 3px; color: var(--oc-text-body); font-size: 12px; }.patient-identity p span { margin: 0 4px; color: var(--oc-border-strong); }.patient-identity small { display: flex; align-items: center; gap: 5px; color: var(--oc-text-muted); }.patient-identity small .material-symbols-outlined { font-size: 15px; }.patient-actions { display: flex; align-items: center; gap: 8px; }.allergy-alert { display: flex; grid-column: 1 / -1; align-items: flex-start; gap: 11px; border: 1px solid #fecaca; border-radius: 9px; padding: 12px 14px; background: var(--oc-danger-bg); color: #991b1b; }.allergy-alert > .material-symbols-outlined { margin-top: 1px; }.allergy-alert strong, .allergy-alert p { margin: 0; }.allergy-alert strong { font-size: 12px; }.allergy-alert p { margin-top: 2px; font-size: 11px; }
+.clinical-metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 18px; }.clinical-metrics article { position: relative; display: flex; min-height: 105px; flex-direction: column; justify-content: space-between; border: 1px solid var(--oc-border); border-radius: 11px; padding: 16px; background: #fff; }.clinical-metrics span { color: var(--oc-text-muted); font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }.clinical-metrics strong { font-family: Manrope, sans-serif; font-size: 26px; }.clinical-metrics i { position: absolute; top: 14px; right: 14px; display: flex; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 8px; background: var(--oc-surface-soft); color: var(--oc-primary); font-style: normal; }
+.history-card { overflow: hidden; }.history-card > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--oc-border); }.history-card > header h2, .history-card > header p { margin: 0; }.history-card > header h2 { font-size: 18px; }.history-card > header p { margin-top: 3px; color: var(--oc-text-muted); font-size: 11px; }.history-filters { display: flex; gap: 8px; }.history-filters select { width: 180px; }.history-timeline { padding: 12px 20px 24px; }.history-group { position: relative; border-left: 2px solid var(--oc-surface-strong); padding-left: 18px; }.date-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; border: 0; padding: 12px 0; background: transparent; color: var(--oc-text); }.date-toggle > span:first-child { display: flex; align-items: center; gap: 8px; }.timeline-dot { position: absolute; left: -7px; width: 12px; height: 12px; border: 3px solid var(--oc-surface-strong); border-radius: 50%; background: var(--oc-primary); }.date-toggle small { color: var(--oc-text-muted); font-size: 10px; }.history-items { display: grid; gap: 10px; padding-bottom: 14px; }.history-items > article { border-radius: 10px; padding: 14px; background: var(--oc-surface-soft); }.history-item-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }.history-item-head > div { display: flex; align-items: center; gap: 8px; }.history-item-head time { color: var(--oc-text-muted); font-size: 11px; }.history-notes { margin-top: 12px; border-radius: 8px; padding: 11px; background: #fff; }.history-notes > span { color: var(--oc-text-muted); font-size: 9px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }.history-notes p { margin: 5px 0 0; color: var(--oc-text-body); font-size: 12px; }.history-notes p.clamped { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }.history-notes button { border: 0; padding: 4px 0 0; background: transparent; color: var(--oc-primary); font-size: 10px; }
+@media (max-width: 1000px) { .clinical-start { grid-template-columns: 1fr; }.universal-search { grid-template-columns: 1fr; }.search-results { right: 22px; left: 22px; width: auto; }.patient-hero { grid-template-columns: 1fr; }.patient-actions { flex-wrap: wrap; } }
+@media (max-width: 767.98px) { .clinical-metrics { grid-template-columns: 1fr; }.history-card > header { align-items: stretch; flex-direction: column; }.history-filters { flex-direction: column; }.history-filters select { width: 100%; }.patient-identity { align-items: flex-start; }.patient-actions .btn { flex: 1; justify-content: center; }.history-item-head { align-items: flex-start; flex-direction: column; } }

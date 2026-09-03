@@ -1,35 +1,86 @@
-/* Tarjetas de métricas (colores) */
-.metric-citashoy   { background-color: #e863fa; }
-.metric-p_activos   { background-color: #06b6d4; }
-.metric-p_inactivos { background-color: #ff8e43; }
-.metric-total-pacientes  { background-color: #22c55e; }
+.heading-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.date-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; background: var(--oc-surface-soft); color: var(--oc-text-body); font-size: 12px; text-transform: capitalize; }
+.date-chip .material-symbols-outlined { font-size: 15px; }
+.header-actions { display: flex; gap: 10px; }
+.header-actions .btn { display: inline-flex; align-items: center; gap: 7px; }
+.metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
+.metric-card { display: flex; min-height: 145px; align-items: flex-start; justify-content: space-between; border: 1px solid var(--oc-border); border-radius: 12px; padding: 18px; background: #fff; box-shadow: var(--oc-shadow); }
+.metric-card > div { display: flex; min-width: 0; flex-direction: column; }
+.metric-label { color: var(--oc-text-body); font-size: 13px; }
+.metric-card strong { margin: 20px 0 4px; font-family: Manrope, sans-serif; font-size: 30px; line-height: 1; }
+.metric-card small { color: var(--oc-text-muted); font-size: 11px; }
+.metric-card .success { color: #067267; }
+.metric-icon { display: flex; width: 40px; height: 40px; flex: 0 0 40px; align-items: center; justify-content: center; border-radius: 10px; background: var(--oc-surface-soft); color: var(--oc-primary-dark); }
+.dashboard-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(280px, .8fr); gap: 24px; align-items: start; }
+.agenda-card { overflow: hidden; }
+.agenda-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px; border-bottom: 1px solid var(--oc-border); }
+.agenda-head h2, .side-title h2 { margin: 0; font-size: 18px; }
+.agenda-head > div:first-child { display: flex; align-items: center; gap: 10px; }
+.agenda-head > div:first-child span { border-radius: 999px; padding: 4px 9px; background: var(--oc-surface-soft); color: var(--oc-primary-dark); font-size: 11px; }
+.agenda-date-actions { display: flex; align-items: center; gap: 8px; }
+.agenda-date-actions input { width: 140px; }
+.link-button { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: var(--oc-primary); font-weight: 500; }
+.link-button .material-symbols-outlined { font-size: 17px; }
+.status-filters { display: flex; gap: 8px; padding: 14px 20px 4px; overflow-x: auto; }
+.status-filters span { border-radius: 8px; padding: 7px 12px; background: var(--oc-surface-soft); color: var(--oc-text-body); font-size: 12px; white-space: nowrap; }
+.status-filters span:first-child { background: var(--oc-primary-dark); color: #fff; }
+.appointment-list { padding: 8px 20px 16px; }
+.appointment-row { display: grid; grid-template-columns: 75px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 16px 0; border-bottom: 1px solid #f1f5f9; }
+.appointment-row:last-child { border-bottom: 0; }
+.appointment-row time { border-radius: 9px; padding: 9px 4px; background: var(--oc-surface-soft); color: var(--oc-primary-dark); font-size: 11px; font-weight: 600; text-align: center; }
+.appointment-main { min-width: 0; }
+.appointment-main > div { display: flex; align-items: center; gap: 9px; }
+.appointment-main > div > strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.appointment-main p { display: flex; align-items: center; gap: 6px; margin: 5px 0 0; color: var(--oc-text-body); font-size: 12px; }
+.appointment-main p .material-symbols-outlined { color: var(--oc-primary); font-size: 16px; }
+.appointment-main small { display: block; margin-top: 4px; overflow: hidden; color: var(--oc-text-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.agenda-loading { display: grid; gap: 14px; padding: 20px; }
+.agenda-loading .skeleton { height: 68px; }
+.compact-empty { min-height: 360px; }
+.compact-empty .btn { margin-top: 18px; }
+.dashboard-side { display: grid; gap: 24px; }
+.quick-card, .patient-summary { padding: 20px; }
+.side-title p { margin: 3px 0 0; color: var(--oc-text-muted); font-size: 12px; }
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.quick-grid button { display: flex; min-height: 112px; flex-direction: column; align-items: flex-start; border: 0; border-radius: 10px; padding: 13px; background: var(--oc-surface-soft); color: var(--oc-text); text-align: left; }
+.quick-grid button:hover { background: var(--oc-surface-strong); }
+.quick-grid .material-symbols-outlined { display: flex; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 8px; background: #fff; color: var(--oc-primary-dark); }
+.quick-grid strong { margin-top: 12px; font-size: 12px; }
+.quick-grid small { margin-top: 2px; color: var(--oc-text-muted); font-size: 10px; }
+.summary-total { display: flex; align-items: baseline; gap: 8px; margin: 24px 0 10px; }
+.summary-total strong { font-family: Manrope, sans-serif; font-size: 32px; }
+.summary-total span { color: var(--oc-text-muted); font-size: 11px; }
+.progress { height: 7px; background: var(--oc-surface-strong); }
+.progress-bar { background: var(--oc-secondary); }
+.summary-legend { display: grid; gap: 10px; margin-top: 18px; }
+.summary-legend span { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; color: var(--oc-text-body); font-size: 12px; }
+.summary-legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--oc-border-strong); }
+.summary-legend i.active { background: var(--oc-secondary); }
+.modal-title-wrap { display: flex; align-items: center; gap: 14px; }
+.modal-title-wrap h5, .modal-title-wrap p { margin: 0; }
+.modal-title-wrap p { margin-top: 2px; color: var(--oc-text-muted); font-size: 12px; }
+.modal-title-icon { display: flex; width: 42px; height: 42px; align-items: center; justify-content: center; border-radius: 10px; background: #d7faf3; color: #067267; }
+.autocomplete-menu { max-height: 250px; overflow-y: auto; }
+.patient-option { display: flex; align-items: center; gap: 10px; }
+.patient-option .avatar { width: 32px; height: 32px; flex-basis: 32px; font-size: 11px; }
+.patient-option strong, .patient-option small { display: block; }
+.patient-option small { color: var(--oc-text-muted); font-size: 10px; }
+.form-section { border-radius: 11px; padding: 18px; background: var(--oc-surface-soft); }
+.form-section + .form-section { margin-top: 16px; }
+.form-section h6 { display: flex; align-items: center; gap: 9px; margin: 0 0 16px; }
+.form-section h6 span { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 7px; background: #d8e8ff; color: var(--oc-primary-dark); font-size: 12px; }
 
-/* Dropdown de sugerencias con scroll */
-/* Ajusta la altura máxima y agrega scroll se usa en el menú de sugerencias del autocompletado de “Paciente” dentro del modal “Nueva Cita”.*/
-.dropdown-scroll {
-  max-height: 220px;
-  overflow: auto;
-}
-
-/* Encabezado con logo */
-.dash-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.dash-logo {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
-}
-
-.dash-titles small {
-  display: block;
-  margin-top: 2px;
-}
-
-@media (min-width: 768px) {
-  .dash-logo { width: 56px; height: 56px; }
+@media (max-width: 1200px) { .metric-grid { grid-template-columns: 1fr 1fr; } .dashboard-layout { grid-template-columns: 1fr; } .dashboard-side { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 767.98px) {
+  .header-actions { width: 100%; }
+  .header-actions .btn { flex: 1; justify-content: center; }
+  .metric-grid { grid-template-columns: 1fr; gap: 12px; }
+  .metric-card { min-height: 120px; }
+  .dashboard-side { grid-template-columns: 1fr; }
+  .agenda-head { align-items: flex-start; flex-direction: column; }
+  .agenda-date-actions { width: 100%; flex-wrap: wrap; }
+  .agenda-date-actions input { flex: 1; }
+  .link-button { width: 100%; margin-top: 4px; }
+  .appointment-row { grid-template-columns: 62px minmax(0, 1fr); }
+  .appointment-row > .btn { display: none; }
 }

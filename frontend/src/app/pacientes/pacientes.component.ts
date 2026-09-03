@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal, ViewChild, ElementRef } fr
 import { AuthService } from '../core/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PacientesService, Paciente, PacienteEstado } from './pacientes.service';
 
 declare var bootstrap: any;
@@ -19,6 +19,7 @@ type FiltroPac = 'TODOS' | 'ACTIVOS' | 'INACTIVOS';
 export class PacientesComponent implements OnInit {
   private svc = inject(PacientesService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private auth = inject(AuthService);
 
   // UI / estado
@@ -26,6 +27,8 @@ export class PacientesComponent implements OnInit {
   pacientes = signal<Paciente[]>([]);
   search = signal('');
   filtro = signal<FiltroPac>('TODOS');
+  page = signal(1);
+  readonly pageSize = 10;
 
   // Modal
   @ViewChild('pacModal') pacModal!: ElementRef;
@@ -39,6 +42,15 @@ export class PacientesComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.route.queryParamMap.subscribe(params => {
+      if (params.get('nuevo') === '1') {
+        const nombre = params.get('nombre')?.trim() ?? '';
+        setTimeout(() => {
+          this.openCrear();
+          if (nombre) this.form.nombres = nombre;
+        });
+      }
+    });
   }
 
   private blankForm() {
@@ -139,9 +151,23 @@ export class PacientesComponent implements OnInit {
     return arr;
   });
 
+  totalActivos = computed(() => this.pacientes().filter(p => p.estado === 'ACTIVO').length);
+  totalInactivos = computed(() => this.pacientes().filter(p => p.estado === 'INACTIVO').length);
+  totalPages = computed(() => Math.max(1, Math.ceil(this.listaFiltrada().length / this.pageSize)));
+  listaPaginada = computed(() => {
+    const current = Math.min(this.page(), this.totalPages());
+    const start = (current - 1) * this.pageSize;
+    return this.listaFiltrada().slice(start, start + this.pageSize);
+  });
+
   setFiltro(f: FiltroPac) {
     this.filtro.set(f);
+    this.page.set(1);
   }
+
+  setSearch(value: string): void { this.search.set(value); this.page.set(1); }
+  previousPage(): void { this.page.set(Math.max(1, this.page() - 1)); }
+  nextPage(): void { this.page.set(Math.min(this.totalPages(), this.page() + 1)); }
 
   filtroLabel() {
     const f = this.filtro();
@@ -191,8 +217,7 @@ export class PacientesComponent implements OnInit {
 
   // Acciones
   verHistoria(p: Paciente) {
-    // Placeholder: navegaremos a historia clínica del paciente más adelante
-    alert(`Historia clínica de: ${p.nombres} ${p.apellidos} (pendiente)`);
+    this.router.navigate(['/historia-clinica'], { queryParams: { pacienteId: p.id } });
   }
 
   agendar(p: Paciente) {
@@ -201,6 +226,8 @@ export class PacientesComponent implements OnInit {
       queryParams: { paciente: `${p.nombres} ${p.apellidos}` } 
     });
   }
+
+  verPerfil(p: Paciente): void { this.router.navigate(['/pacientes', p.id]); }
 
   eliminar(p: Paciente) {
     const current = this.auth.getCurrentUser();
