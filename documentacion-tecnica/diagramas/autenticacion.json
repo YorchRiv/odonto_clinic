@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Inicio de sesión implementado",
+    "viewBox": [1080, 650],
+    "column_fit": "spread",
+    "quality_profile": "showcase",
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "default": { "label": "Invocación" },
+        "security": { "label": "Operación de seguridad" },
+        "return": { "label": "Respuesta" }
+      }
+    }
+  },
+  "participants": [
+    { "id": "usuario", "type": "external", "label": "Usuario" },
+    { "id": "angular", "type": "frontend", "label": "Login Angular" },
+    { "id": "controller", "type": "backend", "label": "AuthController" },
+    { "id": "service", "type": "security", "label": "AuthService" },
+    { "id": "prisma", "type": "backend", "label": "PrismaService" },
+    { "id": "postgres", "type": "database", "label": "PostgreSQL" },
+    { "id": "jwt", "type": "security", "label": "JwtService" }
+  ],
+  "segments": [
+    { "from": 150, "to": 320, "label": "Validación de credenciales" },
+    { "from": 330, "to": 460, "label": "Emisión del token" },
+    { "from": 470, "to": 570, "label": "Persistencia en navegador" }
+  ],
+  "messages": [
+    { "id": "enviaCredenciales", "from": "usuario", "to": "angular", "y": 165, "label": "correo y contraseña" },
+    { "id": "postLogin", "from": "angular", "to": "controller", "y": 195, "label": "POST /auth/login", "variant": "emphasis" },
+    { "id": "delegarLogin", "from": "controller", "to": "service", "y": 225, "label": "login(LoginDto)" },
+    { "id": "buscarUsuario", "from": "service", "to": "prisma", "y": 255, "label": "findUnique por email" },
+    { "id": "consultaUsuario", "from": "prisma", "to": "postgres", "y": 285, "label": "SELECT Usuario" },
+    { "id": "filaUsuario", "from": "postgres", "to": "prisma", "y": 315, "label": "usuario o ausencia", "variant": "return" },
+    { "id": "retornaUsuario", "from": "prisma", "to": "service", "y": 345, "label": "registro de usuario", "variant": "return" },
+    { "id": "firmarToken", "from": "service", "to": "jwt", "y": 405, "label": "tras bcrypt.compare firma token 24 h", "variant": "security" },
+    { "id": "tokenFirmado", "from": "jwt", "to": "service", "y": 435, "label": "access_token", "variant": "return" },
+    { "id": "respuestaLogin", "from": "service", "to": "controller", "y": 475, "label": "token usuario mensaje", "variant": "return" },
+    { "id": "jsonLogin", "from": "controller", "to": "angular", "y": 505, "label": "200 JSON", "variant": "return" },
+    { "id": "navegar", "from": "angular", "to": "usuario", "y": 550, "label": "guarda localStorage y navega", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "angular", "from": 190, "to": 570, "type": "frontend" },
+    { "participant": "controller", "from": 195, "to": 510, "type": "backend" },
+    { "participant": "service", "from": 225, "to": 480, "type": "security" },
+    { "participant": "prisma", "from": 255, "to": 350, "type": "backend" },
+    { "participant": "postgres", "from": 280, "to": 320, "type": "database" },
+    { "participant": "jwt", "from": 400, "to": 440, "type": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Resultado exitoso",
+      "items": [
+        "La contraseña se compara con bcrypt",
+        "El token firmado incluye email sub rol nombre y apellido",
+        "El frontend conserva la respuesta completa en localStorage"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Límites verificados",
+      "items": [
+        "No se implementa renovación del token",
+        "El logout elimina el registro local user",
+        "El guard frontend verifica presencia del token pero no su expiración"
+      ]
+    }
+  ]
+}

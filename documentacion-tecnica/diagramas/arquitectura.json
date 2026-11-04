@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Arquitectura implementada de OdontoClinic",
+    "quality_profile": "showcase",
+    "viewBox": [1180, 610],
+    "repository": {
+      "url": "https://github.com/YorchRiv/odonto_clinic.git",
+      "provider": "github",
+      "revision": "22053799132374a8ec3b3c65716bc3f9d9cbdd19"
+    },
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "external": { "label": "Actor externo" },
+        "frontend": { "label": "Frontend" },
+        "backend": { "label": "Backend" },
+        "security": { "label": "Seguridad" },
+        "database": { "label": "Datos" }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "usuario",
+      "type": "external",
+      "label": "Usuario",
+      "sublabel": "Navegador web",
+      "pos": [35, 275],
+      "size": [125, 64]
+    },
+    {
+      "id": "angular",
+      "type": "frontend",
+      "label": "Angular SPA",
+      "sublabel": "Componentes y rutas",
+      "tag": "Angular 19",
+      "pos": [220, 275],
+      "size": [150, 70],
+      "sources": [
+        { "path": "frontend/src/main.ts" },
+        { "path": "frontend/src/app/app.routes.ts" }
+      ]
+    },
+    {
+      "id": "clienteHttp",
+      "type": "frontend",
+      "label": "Servicios HTTP",
+      "sublabel": "Interceptor Bearer",
+      "pos": [430, 275],
+      "size": [155, 70],
+      "sources": [
+        { "path": "frontend/src/app/core/auth.interceptor.ts" },
+        { "path": "frontend/src/app/agenda/agenda.service.ts" }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API NestJS",
+      "sublabel": "Controllers y services",
+      "tag": "Puerto 3000 por defecto",
+      "pos": [655, 275],
+      "size": [165, 70],
+      "sources": [
+        { "path": "backend/src/main.ts" },
+        { "path": "backend/src/app.module.ts" }
+      ]
+    },
+    {
+      "id": "jwt",
+      "type": "security",
+      "label": "JWT Passport",
+      "sublabel": "Perfil y actualización",
+      "tag": "Bearer token",
+      "pos": [655, 105],
+      "size": [165, 70],
+      "sources": [
+        { "path": "backend/src/auth/strategies/jwt.strategy.ts" },
+        { "path": "backend/src/auth/auth.controller.ts" }
+      ]
+    },
+    {
+      "id": "prisma",
+      "type": "backend",
+      "label": "Prisma ORM",
+      "sublabel": "PrismaService",
+      "tag": "Prisma 6.17.1",
+      "pos": [880, 275],
+      "size": [145, 70],
+      "sources": [
+        { "path": "backend/src/prisma/prisma.service.ts" },
+        { "path": "backend/prisma/schema.prisma" }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "Usuario Paciente Cita Historia",
+      "pos": [880, 455],
+      "size": [180, 76],
+      "sources": [
+        { "path": "backend/prisma/schema.prisma" },
+        { "path": "backend/prisma/migrations/20251020062541_init/migration.sql" }
+      ]
+    }
+  ],
+  "connections": [
+    { "id": "usaSpa", "from": "usuario", "to": "angular", "label": "interacción web", "variant": "emphasis", "route": "straight", "labelAt": [190, 359] },
+    { "id": "invocaServicios", "from": "angular", "to": "clienteHttp", "label": "servicios inyectados", "labelAt": [400, 271] },
+    { "id": "restApi", "from": "clienteHttp", "to": "api", "label": "HTTPS JSON REST", "variant": "emphasis", "labelAt": [620, 359] },
+    { "id": "protegeRutas", "from": "jwt", "to": "api", "label": "valida JWT en 2 rutas", "variant": "security", "fromSide": "bottom", "toSide": "top", "labelAt": [738, 189] },
+    { "id": "usaPrisma", "from": "api", "to": "prisma", "label": "operaciones CRUD", "labelAt": [850, 271] },
+    { "id": "sqlPostgres", "from": "prisma", "to": "postgres", "label": "consultas y persistencia", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Flujo principal",
+      "items": [
+        "El frontend consume la API configurada mediante servicios Angular",
+        "NestJS delega persistencia a Prisma",
+        "Prisma obtiene la conexión desde DATABASE_URL"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Alcance de seguridad observado",
+      "items": [
+        "El interceptor agrega Authorization Bearer cuando existe un token",
+        "JwtAuthGuard se aplica a GET /auth/profile y PUT /auth/update/:id",
+        "Los controladores CRUD restantes no declaran guards"
+      ]
+    }
+  ]
+}

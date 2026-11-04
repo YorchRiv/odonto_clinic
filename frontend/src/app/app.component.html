@@ -29,11 +29,6 @@
         </a>
       </nav>
 
-      <div class="clinic-state">
-        <span class="online-dot"></span>
-        <span><strong>Clínica operativa</strong><small>Conexión segura</small></span>
-        <span class="material-symbols-outlined">keyboard_tab</span>
-      </div>
     </aside>
 
     <button class="sidebar-backdrop" [class.visible]="sidebarOpen" (click)="closeSidebar()" aria-label="Cerrar menú"></button>
@@ -44,14 +39,8 @@
           <span class="material-symbols-outlined">menu</span>
         </button>
         <div class="topbar-context">
-          <span>OdontoClinic</span><span class="slash">/</span>
-          <span class="clinic-chip"><span class="material-symbols-outlined">apartment</span> Sede Principal</span>
+          <span>OdontoClinic</span>
         </div>
-        <a class="global-search" routerLink="/pacientes">
-          <span class="material-symbols-outlined">search</span>
-          <span>Buscar paciente por nombre o DPI</span>
-          <kbd>⌘K</kbd>
-        </a>
         <a class="topbar-new" routerLink="/agenda" [queryParams]="{nueva: 1}">
           <span class="material-symbols-outlined">add</span><span>Nueva cita</span>
         </a>
